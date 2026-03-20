@@ -1,35 +1,35 @@
 # DeFiWise
 
-Plataforma educativa de finanzas descentralizadas con certificaciones verificables on-chain en Stellar.
+Educational platform for decentralized finance with verifiable on-chain certifications on Stellar.
 
-## Qué es
+## What is it
 
-DeFiWise permite aprender DeFi de forma práctica a través de rutas de aprendizaje con módulos, lecciones y quizzes. Al completar cada módulo, el usuario recibe un NFT (badge) y XP registrados en Stellar Testnet.
+DeFiWise lets users learn DeFi hands-on through learning paths with modules, lessons, and quizzes. Upon completing each module, the user receives an NFT badge and XP tokens recorded on Stellar Testnet.
 
 ## Stack
 
 - **Frontend:** Next.js 14, Tailwind CSS, DaisyUI
 - **Wallet:** Freighter (Stellar)
-- **Contratos:** Soroban (Rust) — XP Token + Badge NFT
-- **Red:** Stellar Testnet
+- **Smart Contracts:** Soroban (Rust) — XP Token + Badge NFT
+- **Network:** Stellar Testnet
 
-## Contratos deployados (Testnet)
+## Deployed Contracts (Testnet)
 
-| Contrato | Address |
+| Contract | Address |
 |----------|---------|
 | XP Token | `CATAE4HXRWEIVGI2ZW5NGRXIQDNFWZ4YLAKXUU3Q3FKBDT2MPGJECTL4` |
 | Badge NFT | `CDWJE7AM3DFWC6FD2RKBASWP7EITQ2ULJH4FX5JFQRVHXQSXDPJAB3KI` |
 
-## Cómo correr
+## Getting Started
 
 ```bash
 npm install
 npm run dev
 ```
 
-Abrir http://localhost:3000
+Open http://localhost:3000
 
-## Contratos
+## Contracts
 
 ```bash
 cd contracts
@@ -37,30 +37,30 @@ cargo build --release --target wasm32-unknown-unknown
 cargo test
 ```
 
-Requiere Rust + `wasm32-unknown-unknown` target + Stellar CLI.
+Requires Rust + `wasm32-unknown-unknown` target + Stellar CLI.
 
-## Estructura
+## Project Structure
 
 ```
 src/
   app/
-    home/           # Landing (Hero, Advantages, Methodology)
-    dashboard/      # Catálogo de rutas, módulos, lecciones, quizzes
-      logros/       # NFTs y certificados ganados
+    home/           # Landing page (Hero, Advantages, Methodology)
+    dashboard/      # Course catalog, modules, lessons, quizzes
+      logros/       # Earned NFTs and certificates
   components/
     stellar/        # ConnectWalletButton, OnChainStatus
   hooks/            # useStellarWallet, useProgress, useStellarProgress
-  lib/              # stellar.ts (interacción con contratos)
-  data/             # Cursos, módulos, lecciones, preguntas
+  lib/              # stellar.ts (contract interaction layer)
+  data/             # Courses, modules, lessons, quiz questions
 contracts/
-  xp-token/         # Token fungible de XP con balance histórico
-  badge-nft/        # NFT por módulo completado
+  xp-token/         # Fungible XP token with historical balance tracking
+  badge-nft/        # NFT minted per completed module
 ```
 
-## Licencia
+## License
 
 MIT
 
 ---
 
-Hecho por [Buen Dia Builders](https://github.com/BuenDia-Builders)
+Built by [Buen Dia Builders](https://github.com/BuenDia-Builders)
