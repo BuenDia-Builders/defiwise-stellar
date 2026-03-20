@@ -41,11 +41,11 @@ Two Soroban contracts power the on-chain mechanics:
 
 ```bash
 cd contracts
-cargo build --release --target wasm32-unknown-unknown
+cargo build --release --target wasm32v1-none
 cargo test
 ```
 
-Requires Rust, `wasm32-unknown-unknown` target, and [Stellar CLI](https://developers.stellar.org/docs/tools/developer-tools/cli/install-cli).
+Requires Rust, `wasm32v1-none` target, and [Stellar CLI](https://developers.stellar.org/docs/tools/developer-tools/cli/install-cli).
 
 ## Project Structure
 
