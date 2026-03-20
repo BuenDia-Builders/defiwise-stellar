@@ -5,6 +5,7 @@ import AsideMenu from "@/components/asideMenu/AsideMenu";
 import { useProgress } from "@/hooks/useProgress";
 import { courses } from "@/data/courses";
 import { BsPatchCheckFill, BsTrophy, BsStarFill } from "react-icons/bs";
+import { OnChainStatus } from "@/components/stellar/OnChainStatus";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { totalXP, completedModules } = useProgress();
@@ -64,6 +65,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </p>
           </div>
         </article>
+
+        {/* On-chain status */}
+        <div className="mt-6">
+          <OnChainStatus />
+        </div>
       </aside>
     </div>
   );
