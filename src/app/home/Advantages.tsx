@@ -11,10 +11,10 @@ export function Advantages() {
             Beneficios
           </p>
           <h2 className="text-3xl sm:text-4xl font-bold text-darkGreen mb-4">
-            Todo lo que necesitás para aprender DeFi
+            Aprendé haciendo, demostralo on-chain
           </h2>
           <p className="text-grey max-w-2xl mx-auto text-lg">
-            Certificaciones validadas en blockchain, insignias coleccionables y una comunidad activa te esperan.
+            Cada desafío que completás queda registrado en blockchain. Tu conocimiento tiene respaldo verificable.
           </p>
         </div>
 
@@ -26,25 +26,25 @@ export function Advantages() {
             </div>
             <h3 className="text-xl font-semibold text-darkGreen mb-3">Certificados on-chain</h3>
             <p className="text-grey">
-              Tus certificados quedan registrados en Stellar. Compartílos en LinkedIn y demostrá tus conocimientos.
+              Tus logros quedan registrados en blockchain. Compartílos y demostrá lo que sabés.
             </p>
           </div>
           <div className="glass-card rounded-2xl p-8 hover-lift">
             <div className="w-12 h-12 bg-darkOrange/10 rounded-xl flex items-center justify-center mb-5">
               <BsAward className="text-darkOrange" size={24} />
             </div>
-            <h3 className="text-xl font-semibold text-darkGreen mb-3">NFTs e insignias</h3>
+            <h3 className="text-xl font-semibold text-darkGreen mb-3">NFTs por desafío</h3>
             <p className="text-grey">
-              Coleccioná badges verificables por cada módulo completado. Tokens únicos que validan tu aprendizaje.
+              Coleccioná badges verificables por cada módulo completado. Tokens únicos que validan tu progreso.
             </p>
           </div>
           <div className="glass-card rounded-2xl p-8 hover-lift">
             <div className="w-12 h-12 bg-pink/10 rounded-xl flex items-center justify-center mb-5">
               <BsLightning className="text-pink" size={24} />
             </div>
-            <h3 className="text-xl font-semibold text-darkGreen mb-3">Rápido y económico</h3>
+            <h3 className="text-xl font-semibold text-darkGreen mb-3">Práctica real</h3>
             <p className="text-grey">
-              Stellar ofrece transacciones en segundos con costos casi nulos. Ideal para aprender sin barreras.
+              No es solo teoría — interactuás con protocolos reales y entendés DeFi desde adentro.
             </p>
           </div>
         </div>
@@ -54,10 +54,10 @@ export function Advantages() {
           <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-active/5 to-active/15 p-10 hover-lift border border-active/20">
             <div className="relative z-10">
               <h3 className="text-2xl font-bold text-darkGreen mb-4">
-                Certificados validados en Stellar
+                Certificados verificables
               </h3>
               <p className="text-grey mb-6">
-                Comparte nuestras certificaciones con tus contactos en tu perfil de LinkedIn u otras redes sociales.
+                Compartí tus certificaciones en LinkedIn u otras redes. Cualquiera puede verificarlas on-chain.
               </p>
             </div>
             <Image
@@ -72,10 +72,10 @@ export function Advantages() {
           <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-darkOrange/5 to-darkOrange/15 p-10 hover-lift border border-darkOrange/20">
             <div className="relative z-10">
               <h3 className="text-2xl font-bold text-darkGreen mb-4">
-                Gana NFTs y Tokens aprendiendo
+                Ganá NFTs completando desafíos
               </h3>
               <p className="text-grey mb-6">
-                Coleccioná insignias en la red Stellar y demostrá tus conocimientos con tokens verificables.
+                Cada módulo tiene un badge único. Coleccioná todos para desbloquear tu certificado final.
               </p>
             </div>
             <Image

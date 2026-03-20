@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { BsStars, BsCheckCircle } from "react-icons/bs";
+import { BsArrowRight, BsCheckCircle } from "react-icons/bs";
 
 export function Methodology() {
   return (
@@ -8,13 +8,13 @@ export function Methodology() {
         {/* Section header */}
         <div className="text-center mb-16">
           <p className="text-darkOrange font-semibold text-sm uppercase tracking-wider mb-3">
-            Metodología
+            Cómo funciona
           </p>
           <h2 className="text-3xl sm:text-4xl font-bold text-darkGreen mb-4">
-            Aprendé con una metodología única
+            Aprendé, resolvé, demostralo
           </h2>
           <p className="text-grey max-w-2xl mx-auto text-lg">
-            Módulos interactivos, práctica real con Stellar y certificación al completar cada etapa.
+            Rutas de aprendizaje con teoría, desafíos prácticos y certificación al completar cada etapa.
           </p>
         </div>
 
@@ -30,32 +30,35 @@ export function Methodology() {
             />
             <div>
               <h3 className="text-2xl sm:text-3xl font-bold text-darkGreen mb-6 leading-tight">
-                Adquirí conocimientos sobre DeFi en Stellar de manera interactiva
+                Contenido práctico con validación real
               </h3>
               <p className="text-grey mb-8 text-lg">
-                Sumérgete en el mundo de las finanzas descentralizadas y descubrí cómo
-                Stellar está transformando las finanzas con transacciones rápidas y de bajo costo.
+                Cada ruta combina teoría con desafíos que ponen a prueba lo que aprendiste.
+                Tu progreso queda registrado de forma transparente y verificable.
               </p>
 
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <BsCheckCircle className="text-active mt-1 flex-shrink-0" size={20} />
-                  <p className="text-grey m-0">Módulos progresivos con contenido teórico y práctico</p>
+                  <p className="text-grey m-0">Módulos progresivos con teoría y práctica</p>
                 </div>
                 <div className="flex items-start gap-3">
                   <BsCheckCircle className="text-active mt-1 flex-shrink-0" size={20} />
-                  <p className="text-grey m-0">Actividades interactivas con feedback inmediato</p>
+                  <p className="text-grey m-0">Quizzes al final de cada módulo con feedback inmediato</p>
                 </div>
                 <div className="flex items-start gap-3">
                   <BsCheckCircle className="text-active mt-1 flex-shrink-0" size={20} />
-                  <p className="text-grey m-0">Certificación blockchain al completar cada ruta</p>
+                  <p className="text-grey m-0">NFTs y certificados verificables al completar</p>
                 </div>
               </div>
 
-              <button className="mt-8 btn border-0 text-white bg-gradient-to-r from-darkOrange to-lightOrange text-base px-8 py-3 rounded-xl shadow-lg shadow-darkOrange/25">
-                Comenzar mi ruta
-                <BsStars className="ml-2" />
-              </button>
+              <a
+                href="/dashboard"
+                className="mt-8 inline-flex items-center gap-2 btn border-0 text-white bg-gradient-to-r from-darkOrange to-lightOrange text-base px-8 py-3 rounded-xl shadow-lg shadow-darkOrange/25"
+              >
+                Ver rutas disponibles
+                <BsArrowRight size={16} />
+              </a>
             </div>
           </div>
         </div>

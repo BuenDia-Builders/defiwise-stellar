@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { BsStars, BsArrowRight } from "react-icons/bs";
+import { BsArrowRight } from "react-icons/bs";
 
 export function Hero() {
   return (
@@ -13,47 +13,24 @@ export function Hero() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left: text content */}
           <div className="text-left">
-            <div className="inline-flex items-center gap-2 bg-active/10 text-active rounded-full px-4 py-2 text-sm font-medium mb-8">
-              <span className="w-2 h-2 bg-active rounded-full animate-pulse" />
-              Inscripciones abiertas
-            </div>
-
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-darkGreen leading-tight mb-6">
-              Aprende sobre{" "}
-              <span className="gradient-text">finanzas descentralizadas</span>{" "}
-              en Stellar
+              Dominá las{" "}
+              <span className="gradient-text">finanzas descentralizadas</span>
             </h1>
 
             <p className="text-lg text-grey max-w-lg mb-8 leading-relaxed">
-              Sumérgete en el ecosistema Stellar y aprende a usar DeFi de manera
-              práctica. Obtén certificaciones e insignias validadas on-chain.
+              Aprendé DeFi de forma práctica: completá desafíos, demostrá lo que
+              sabés y obtené certificaciones verificables en blockchain.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <button className="btn border-0 text-white bg-gradient-to-r from-darkOrange to-lightOrange text-base px-8 py-3 rounded-xl shadow-lg shadow-darkOrange/25 hover:shadow-darkOrange/40 transition-all">
-                Empezar ahora
-                <BsStars className="ml-2" />
-              </button>
-              <button className="btn btn-ghost text-darkOrange border-2 border-darkOrange/20 hover:border-darkOrange/40 text-base px-8 py-3 rounded-xl">
-                Ver beneficios
+              <a
+                href="/dashboard"
+                className="btn border-0 text-white bg-gradient-to-r from-darkOrange to-lightOrange text-base px-8 py-3 rounded-xl shadow-lg shadow-darkOrange/25 hover:shadow-darkOrange/40 transition-all"
+              >
+                Explorar rutas
                 <BsArrowRight className="ml-2" />
-              </button>
-            </div>
-
-            {/* Stats */}
-            <div className="flex gap-8 mt-12 pt-8 border-t border-borderGrey/30">
-              <div>
-                <p className="text-2xl font-bold text-darkGreen">500+</p>
-                <p className="text-sm text-darkGrey">Estudiantes</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-darkGreen">12</p>
-                <p className="text-sm text-darkGrey">Módulos</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-darkGreen">100%</p>
-                <p className="text-sm text-darkGrey">On-chain</p>
-              </div>
+              </a>
             </div>
           </div>
 
@@ -87,7 +64,6 @@ export function Hero() {
               {/* Center badge */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 glass-card rounded-2xl p-6 shadow-xl">
                 <Image src="/logo.svg" alt="DeFiWise" width={60} height={60} className="mx-auto" />
-                <p className="text-sm font-semibold text-darkGreen mt-2 text-center">Powered by Stellar</p>
               </div>
             </div>
           </div>
