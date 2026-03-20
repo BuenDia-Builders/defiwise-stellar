@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DeFiWise
 
-## Getting Started
+Plataforma educativa de finanzas descentralizadas con certificaciones verificables on-chain en Stellar.
 
-First, run the development server:
+## Qué es
+
+DeFiWise permite aprender DeFi de forma práctica a través de rutas de aprendizaje con módulos, lecciones y quizzes. Al completar cada módulo, el usuario recibe un NFT (badge) y XP registrados en Stellar Testnet.
+
+## Stack
+
+- **Frontend:** Next.js 14, Tailwind CSS, DaisyUI
+- **Wallet:** Freighter (Stellar)
+- **Contratos:** Soroban (Rust) — XP Token + Badge NFT
+- **Red:** Stellar Testnet
+
+## Contratos deployados (Testnet)
+
+| Contrato | Address |
+|----------|---------|
+| XP Token | `CATAE4HXRWEIVGI2ZW5NGRXIQDNFWZ4YLAKXUU3Q3FKBDT2MPGJECTL4` |
+| Badge NFT | `CDWJE7AM3DFWC6FD2RKBASWP7EITQ2ULJH4FX5JFQRVHXQSXDPJAB3KI` |
+
+## Cómo correr
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrir http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Contratos
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cd contracts
+cargo build --release --target wasm32-unknown-unknown
+cargo test
+```
 
-## Learn More
+Requiere Rust + `wasm32-unknown-unknown` target + Stellar CLI.
 
-To learn more about Next.js, take a look at the following resources:
+## Estructura
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+  app/
+    home/           # Landing (Hero, Advantages, Methodology)
+    dashboard/      # Catálogo de rutas, módulos, lecciones, quizzes
+      logros/       # NFTs y certificados ganados
+  components/
+    stellar/        # ConnectWalletButton, OnChainStatus
+  hooks/            # useStellarWallet, useProgress, useStellarProgress
+  lib/              # stellar.ts (interacción con contratos)
+  data/             # Cursos, módulos, lecciones, preguntas
+contracts/
+  xp-token/         # Token fungible de XP con balance histórico
+  badge-nft/        # NFT por módulo completado
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Licencia
 
-## Deploy on Vercel
+MIT
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Hecho por [Buen Dia Builders](https://github.com/BuenDia-Builders)
