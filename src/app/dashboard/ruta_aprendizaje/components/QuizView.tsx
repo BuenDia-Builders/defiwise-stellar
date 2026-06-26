@@ -44,10 +44,7 @@ export default function QuizView({ module, onBack, progress }: QuizViewProps) {
       setSelectedOption(null);
       setAnswered(false);
     } else {
-      const finalCorrect =
-        correctCount +
-        (question.options[selectedOption!]?.isCorrect ? 1 : 0);
-      const finalScore = Math.round((finalCorrect / totalQuestions) * 100);
+      const finalScore = Math.round((correctCount / totalQuestions) * 100);
       progress.completeQuiz(module.id, finalScore, module.rewardXP);
       setFinished(true);
     }
