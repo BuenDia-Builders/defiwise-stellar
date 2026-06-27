@@ -5,6 +5,6 @@ export const certificateData = [
   },
   {
     img: "/certificateFundam.svg",
-    text: "Fundamentos DeFi",
+    text: "Stellar & Soroban",
   },
 ];

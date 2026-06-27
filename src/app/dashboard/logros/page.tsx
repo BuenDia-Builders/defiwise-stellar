@@ -9,14 +9,20 @@ import XPSummary from "./XPSummary";
 
 export default function Logros() {
   const progress = useProgress();
-  const course = courses[0];
 
   return (
     <DashboardLayout>
       <h2 className="text-2xl font-bold text-darkOrange mb-6">Mis logros</h2>
-      <XPSummary progress={progress} course={course} />
-      <EarnedNfts progress={progress} course={course} />
-      <EarnedCertificates progress={progress} course={course} />
+      <XPSummary progress={progress} />
+      {courses.map((course) => (
+        <div key={course.id}>
+          <h3 className="text-lg font-semibold text-darkGreen mb-4">
+            {course.title}
+          </h3>
+          <EarnedNfts progress={progress} course={course} />
+          <EarnedCertificates progress={progress} course={course} />
+        </div>
+      ))}
     </DashboardLayout>
   );
 }

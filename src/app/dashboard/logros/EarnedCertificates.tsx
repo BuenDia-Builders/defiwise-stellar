@@ -15,7 +15,10 @@ export default function EarnedCertificates({
   course,
 }: EarnedCertificatesProps) {
   const totalModules = course.modules.length;
-  const allCompleted = progress.completedModules >= totalModules;
+  const completedCount = course.modules.filter((m) =>
+    progress.getModuleProgress(m.id).completed
+  ).length;
+  const allCompleted = completedCount >= totalModules;
 
   return (
     <div className="border border-borderGrey/30 rounded-2xl mb-8 p-6 bg-white">
@@ -70,12 +73,12 @@ export default function EarnedCertificates({
               <div
                 className="bg-darkOrange h-2 rounded-full transition-all"
                 style={{
-                  width: `${(progress.completedModules / totalModules) * 100}%`,
+                  width: `${(completedCount / totalModules) * 100}%`,
                 }}
               />
             </div>
             <p className="text-xs text-darkGrey mt-2">
-              {progress.completedModules}/{totalModules} módulos
+              {completedCount}/{totalModules} módulos
             </p>
           </>
         )}

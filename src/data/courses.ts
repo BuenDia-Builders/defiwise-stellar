@@ -508,5 +508,460 @@ En el sistema tradicional, tenés que reinvertir manualmente tus ganancias o ace
       },
     ],
   },
+  {
+    id: "stellar-soroban",
+    title: "Stellar & Soroban",
+    description:
+      "Conocé la red Stellar, aprendé cómo funciona Soroban y practicá la interacción con contratos inteligentes en testnet.",
+    certificateImage: "/certificateFundam.svg",
+    modules: [
+      {
+        id: "stellar-mod-1",
+        title: "La red Stellar",
+        description: "Pagos rápidos, activos digitales y consenso federado",
+        color: "active",
+        rewardXP: 50,
+        nftImage: "/nft/nft4.svg",
+        lessons: [
+          {
+            id: "stellar-les-1-1",
+            title: "¿Qué es Stellar?",
+            description:
+              "Historia, propósito y diferencias clave con otras blockchains.",
+            durationMinutes: 10,
+            content: `## ¿Qué es Stellar?
+
+**Stellar** es una red blockchain de código abierto diseñada para **pagos y activos digitales**. Su objetivo es conectar el sistema financiero tradicional con el mundo digital, permitiendo transferencias rápidas, baratas y accesibles.
+
+### ¿Para qué sirve?
+- Enviar dinero entre países en segundos
+- Emitir y transferir activos digitales (tokens, stablecoins)
+- Crear puentes entre monedas fiat y cripto mediante *anchors*
+- Construir aplicaciones DeFi con **Soroban**, su plataforma de smart contracts
+
+### Stellar vs otras redes
+A diferencia de Ethereum, Stellar prioriza **velocidad y bajo costo** sobre la ejecución de lógica compleja on-chain. Las transacciones confirman en ~5 segundos con fees de fracciones de centavo en XLM.
+
+Con **Soroban**, Stellar sumó contratos inteligentes sin sacrificar eficiencia: los contratos se ejecutan en un entorno WASM optimizado, separado del ledger de pagos pero integrado nativamente.`,
+          },
+          {
+            id: "stellar-les-1-2",
+            title: "XLM, cuentas y trustlines",
+            description:
+              "El activo nativo, cómo funcionan las cuentas y la confianza en activos emitidos.",
+            durationMinutes: 12,
+            content: `## XLM, cuentas y trustlines
+
+### XLM (Lumen)
+**XLM** es el activo nativo de Stellar. Se usa para:
+- Pagar las **fees** de transacción (mínimas, ~0.00001 XLM)
+- Mantener una **reserva mínima** en cada cuenta (actualmente 1 XLM base + reservas por trustlines y datos)
+- Servir como puente de liquidez entre activos en el DEX integrado
+
+### Cuentas Stellar
+Cada cuenta tiene:
+- Una **clave pública** (dirección, empieza con \`G...\`)
+- Una **clave privada/secreta** (empieza con \`S...\`) — nunca la compartas
+- Un **balance** de XLM y otros activos autorizados
+
+### Trustlines
+En Stellar, para recibir un activo emitido por un tercero (ej: USDC, un token custom), tu cuenta debe abrir una **trustline** hacia ese emisor. Es una forma explícita de decir: "confío en recibir este activo de este emisor".
+
+### Anchors
+Los **anchors** son entidades reguladas que conectan el mundo fiat con Stellar: depositás pesos o dólares y recibís un token representativo on-chain, y viceversa.`,
+          },
+          {
+            id: "stellar-les-1-3",
+            title: "Consenso y finalidad",
+            description:
+              "Cómo Stellar alcanza acuerdo sin minería y por qué las transacciones son finales al instante.",
+            durationMinutes: 10,
+            content: `## Consenso y finalidad
+
+### Stellar Consensus Protocol (SCP)
+Stellar no usa Proof of Work ni Proof of Stake tradicional. Utiliza el **Stellar Consensus Protocol (SCP)**, un algoritmo de **consenso federado bizantino** (FBA).
+
+Cada validador elige un conjunto de pares en los que confía (su *quorum slice*). Cuando suficientes nodos de confianza acuerdan, la red confirma el ledger.
+
+### Ventajas de SCP
+- **Bajo consumo energético** — no hay minería
+- **Finalidad rápida** — las transacciones se confirman en ~5 segundos
+- **Descentralización flexible** — organizaciones, empresas y nodos independientes pueden validar
+
+### Testnet vs Mainnet
+- **Testnet**: red de prueba con XLM gratis del faucet. Sin valor real. Ideal para aprender.
+- **Mainnet**: red de producción con activos reales.
+
+DeFiWise usa **Stellar Testnet** para que practiques sin riesgo.`,
+          },
+        ],
+        quiz: [
+          {
+            id: "stellar-q-1-1",
+            prompt: "¿Cuál es el activo nativo de la red Stellar?",
+            options: [
+              { text: "USDC", isCorrect: false },
+              { text: "ETH", isCorrect: false },
+              { text: "XLM (Lumen)", isCorrect: true },
+              { text: "BTC", isCorrect: false },
+            ],
+          },
+          {
+            id: "stellar-q-1-2",
+            prompt: "¿Qué es una trustline en Stellar?",
+            options: [
+              {
+                text: "Una línea de crédito bancaria",
+                isCorrect: false,
+              },
+              {
+                text: "Una autorización explícita para recibir un activo emitido por un tercero",
+                isCorrect: true,
+              },
+              {
+                text: "La clave privada de tu wallet",
+                isCorrect: false,
+              },
+              {
+                text: "Un tipo de smart contract",
+                isCorrect: false,
+              },
+            ],
+          },
+          {
+            id: "stellar-q-1-3",
+            prompt: "¿Qué algoritmo de consenso usa Stellar?",
+            options: [
+              { text: "Proof of Work", isCorrect: false },
+              { text: "Proof of Stake puro", isCorrect: false },
+              {
+                text: "Stellar Consensus Protocol (consenso federado bizantino)",
+                isCorrect: true,
+              },
+              { text: "Delegated Proof of Authority", isCorrect: false },
+            ],
+          },
+          {
+            id: "stellar-q-1-4",
+            prompt: "¿Aproximadamente cuánto tarda en confirmarse una transacción en Stellar?",
+            options: [
+              { text: "~5 segundos", isCorrect: true },
+              { text: "~10 minutos", isCorrect: false },
+              { text: "2-5 días", isCorrect: false },
+              { text: "1 hora", isCorrect: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "stellar-mod-2",
+        title: "Introducción a Soroban",
+        description: "Smart contracts en Stellar: Rust, WASM y el modelo de ejecución",
+        color: "pink",
+        rewardXP: 150,
+        nftImage: "/nft/nft5.svg",
+        lessons: [
+          {
+            id: "stellar-les-2-1",
+            title: "¿Qué es Soroban?",
+            description:
+              "La plataforma de contratos inteligentes de Stellar y cómo se integra con el ledger.",
+            durationMinutes: 12,
+            content: `## ¿Qué es Soroban?
+
+**Soroban** es la plataforma de **contratos inteligentes** de Stellar. Permite ejecutar lógica programable on-chain manteniendo la velocidad y bajo costo de la red.
+
+### Características clave
+- **Contratos en Rust** compilados a **WebAssembly (WASM)**
+- **Entorno determinista** — mismo input, mismo output, siempre
+- **Fees predecibles** — el costo se calcula antes de enviar la transacción
+- **Integración nativa** con activos Stellar (XLM, USDC, tokens SAC)
+
+### Soroban vs el ledger clásico
+El ledger clásico de Stellar maneja pagos, trustlines y órdenes DEX. Soroban agrega una capa de **estado y lógica** para protocolos DeFi: tokens custom, NFTs, sistemas de recompensas, y más.
+
+En DeFiWise, los contratos de **XP Token** y **Badge NFT** están desplegados en Soroban Testnet.`,
+          },
+          {
+            id: "stellar-les-2-2",
+            title: "Rust, WASM y el ciclo de vida",
+            description:
+              "Cómo se escriben, compilan e instalan los contratos Soroban.",
+            durationMinutes: 14,
+            content: `## Rust, WASM y el ciclo de vida
+
+### ¿Por qué Rust?
+Soroban usa **Rust** porque ofrece:
+- Seguridad de memoria sin garbage collector
+- Tipado fuerte que previene errores comunes
+- Ecosistema maduro para WASM
+
+### El flujo de un contrato
+1. **Escribir** el contrato en Rust (\`contracts/mi-contrato/src/lib.rs\`)
+2. **Compilar** a WASM: \`cargo build --target wasm32v1-none --release\`
+3. **Instalar** el WASM en la red (transacción \`install_contract_wasm\`)
+4. **Desplegar** una instancia del contrato (\`create_contract\`)
+5. **Invocar** funciones del contrato desde la app o CLI
+
+### Funciones del contrato
+Los contratos Soroban exponen funciones públicas. Cada invocación:
+- Recibe argumentos tipados (ScVal)
+- Puede leer/escribir **storage** persistente o temporal
+- Puede emitir **eventos** consultables off-chain
+- Requiere **autorización** (\`require_auth\`) para operaciones sensibles`,
+          },
+          {
+            id: "stellar-les-2-3",
+            title: "Storage, auth y eventos",
+            description:
+              "Conceptos internos: persistencia de datos, permisos y trazabilidad.",
+            durationMinutes: 12,
+            content: `## Storage, auth y eventos
+
+### Storage
+Soroban ofrece distintos tipos de almacenamiento:
+- **Persistent** — datos que permanecen hasta que se eliminan explícitamente (balances, badges)
+- **Temporary** — datos con TTL, útiles para caché o estado efímero
+- **Instance** — metadata del contrato mismo
+
+El costo de storage se paga en XLM y escala con la cantidad de datos guardados.
+
+### Autorización (auth)
+Las funciones que mueven valor o modifican estado crítico llaman a \`require_auth()\` para verificar que quien invoca firmó la transacción. En DeFiWise:
+- \`reward_quiz\` requiere auth del **admin** (en producción, un backend firmante)
+- \`mint_badge\` requiere auth del **admin** o del usuario según el diseño
+
+### Eventos
+Los contratos emiten eventos (ej: \`RewardIssued\`, \`BadgeMinted\`) que las apps pueden indexar para mostrar historial sin releer todo el storage.`,
+          },
+        ],
+        quiz: [
+          {
+            id: "stellar-q-2-1",
+            prompt: "¿En qué formato se ejecutan los contratos Soroban?",
+            options: [
+              { text: "Bytecode EVM", isCorrect: false },
+              { text: "WebAssembly (WASM)", isCorrect: true },
+              { text: "JavaScript interpretado", isCorrect: false },
+              { text: "Bytecode Python", isCorrect: false },
+            ],
+          },
+          {
+            id: "stellar-q-2-2",
+            prompt: "¿Qué lenguaje se usa principalmente para escribir contratos Soroban?",
+            options: [
+              { text: "Solidity", isCorrect: false },
+              { text: "Rust", isCorrect: true },
+              { text: "Go", isCorrect: false },
+              { text: "C++", isCorrect: false },
+            ],
+          },
+          {
+            id: "stellar-q-2-3",
+            prompt: "¿Para qué sirve require_auth() en un contrato Soroban?",
+            options: [
+              {
+                text: "Para verificar que el invocador firmó y está autorizado para esa acción",
+                isCorrect: true,
+              },
+              {
+                text: "Para compilar el contrato a WASM",
+                isCorrect: false,
+              },
+              {
+                text: "Para conectar con una wallet Ethereum",
+                isCorrect: false,
+              },
+              {
+                text: "Para crear una trustline automáticamente",
+                isCorrect: false,
+              },
+            ],
+          },
+          {
+            id: "stellar-q-2-4",
+            prompt: "¿Qué tipo de storage en Soroban mantiene datos hasta eliminación explícita?",
+            options: [
+              { text: "Temporary", isCorrect: false },
+              { text: "Persistent", isCorrect: true },
+              { text: "Volatile", isCorrect: false },
+              { text: "Session", isCorrect: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "stellar-mod-3",
+        title: "Interactuar con contratos",
+        description: "Simular, firmar y consultar contratos desde tu wallet",
+        color: "darkOrange",
+        rewardXP: 150,
+        nftImage: "/nft/nft6.svg",
+        lessons: [
+          {
+            id: "stellar-les-3-1",
+            title: "Freighter y la red testnet",
+            description:
+              "Conectá tu wallet, configurá testnet y obtené XLM de prueba.",
+            durationMinutes: 10,
+            content: `## Freighter y la red testnet
+
+### Freighter
+**Freighter** es la wallet oficial de Stellar para navegador. DeFiWise la usa para:
+- Conectar tu cuenta (\`G...\`)
+- Firmar transacciones Soroban
+- Cambiar entre Testnet y Mainnet
+
+### Configurar Testnet
+1. Instalá la extensión Freighter
+2. Creá o importá una cuenta
+3. En ajustes, seleccioná **Testnet**
+4. Obtené XLM gratis en el [Stellar Laboratory Faucet](https://laboratory.stellar.org/#account-creator?network=test)
+
+### ¿Por qué necesitás XLM?
+Aunque los fees son mínimos, cada transacción Soroban consume XLM para:
+- Pagar la fee base de la red
+- Cubrir el costo de recursos (CPU, memoria, storage) del contrato`,
+          },
+          {
+            id: "stellar-les-3-2",
+            title: "Simular, armar y enviar",
+            description:
+              "El patrón obligatorio para invocar contratos: simulate → assemble → sign → submit.",
+            durationMinutes: 14,
+            content: `## Simular, armar y enviar
+
+Toda invocación a un contrato Soroban sigue este flujo:
+
+### 1. Simulate
+El RPC simula la transacción **sin enviarla**. Devuelve:
+- El resultado esperado
+- Los recursos consumidos (para calcular la fee)
+- Posibles errores antes de gastar XLM
+
+**Nunca saltees la simulación** — te ahorra fondos y revela bugs.
+
+### 2. Assemble
+Con el resultado de la simulación, se **ensambla** la transacción final incluyendo auth entries y fees correctas.
+
+### 3. Sign
+Freighter pide tu aprobación y **firma** la transacción con tu clave privada (nunca sale de la extensión).
+
+### 4. Submit
+La transacción firmada se envía al RPC. Si es válida, se incluye en un ledger en ~5 segundos.
+
+En \`src/lib/stellar.ts\`, DeFiWise implementa exactamente este patrón con \`buildContractCall\` y \`submitTransaction\`.`,
+          },
+          {
+            id: "stellar-les-3-3",
+            title: "Consultas de solo lectura",
+            description:
+              "Leer balances, badges y estado del contrato sin firmar ni gastar fees.",
+            durationMinutes: 10,
+            content: `## Consultas de solo lectura
+
+No toda interacción requiere firmar. Las **consultas read-only** usan \`simulateTransaction\` con una cuenta **throwaway** (secuencia 0, sin fondos reales).
+
+### Ejemplos en DeFiWise
+- \`balance\` — cuánto XP tiene tu wallet
+- \`historical_balance\` — XP total acumulado (nunca decrece)
+- \`has_badge\` — si ya tenés el NFT de un módulo
+- \`is_challenge_completed\` — si ya reclamaste XP por un quiz
+
+### Cuenta throwaway
+DeFiWise usa \`GAAA...AWHF\`, una cuenta pública de secuencia 0. Solo sirve para simular lecturas — no puede mover fondos ni modificar estado.
+
+### Cuándo firmar vs consultar
+| Acción | ¿Firma? |
+|--------|---------|
+| Ver balance XP | No |
+| Ver badges | No |
+| Reclamar XP por quiz | Sí (admin/backend) |
+| Mintear badge NFT | Sí (admin/backend) |
+
+En testnet demo, algunas operaciones las firma el admin; en producción irían por un backend seguro.`,
+          },
+        ],
+        quiz: [
+          {
+            id: "stellar-q-3-1",
+            prompt: "¿Cuál es el orden correcto para invocar un contrato Soroban desde una app?",
+            options: [
+              {
+                text: "Submit → Sign → Simulate → Assemble",
+                isCorrect: false,
+              },
+              {
+                text: "Simulate → Assemble → Sign → Submit",
+                isCorrect: true,
+              },
+              {
+                text: "Sign → Submit → Simulate",
+                isCorrect: false,
+              },
+              {
+                text: "Assemble → Submit (sin simular)",
+                isCorrect: false,
+              },
+            ],
+          },
+          {
+            id: "stellar-q-3-2",
+            prompt: "¿Para qué sirve simular una transacción antes de enviarla?",
+            options: [
+              {
+                text: "Para duplicar la transacción en mainnet",
+                isCorrect: false,
+              },
+              {
+                text: "Para prever el resultado, calcular fees y detectar errores sin gastar XLM",
+                isCorrect: true,
+              },
+              {
+                text: "Para evitar usar Freighter",
+                isCorrect: false,
+              },
+              {
+                text: "Solo es necesario en mainnet, no en testnet",
+                isCorrect: false,
+              },
+            ],
+          },
+          {
+            id: "stellar-q-3-3",
+            prompt: "¿Qué wallet usa DeFiWise para conectar con Stellar Testnet?",
+            options: [
+              { text: "MetaMask", isCorrect: false },
+              { text: "Freighter", isCorrect: true },
+              { text: "Phantom", isCorrect: false },
+              { text: "Coinbase Wallet", isCorrect: false },
+            ],
+          },
+          {
+            id: "stellar-q-3-4",
+            prompt: "¿Cuándo NO necesitás firmar una transacción?",
+            options: [
+              {
+                text: "Al consultar el balance XP de un usuario (lectura read-only)",
+                isCorrect: true,
+              },
+              {
+                text: "Al mintear un badge NFT",
+                isCorrect: false,
+              },
+              {
+                text: "Al reclamar recompensa de quiz on-chain",
+                isCorrect: false,
+              },
+              {
+                text: "Al transferir tokens",
+                isCorrect: false,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
 ];
 

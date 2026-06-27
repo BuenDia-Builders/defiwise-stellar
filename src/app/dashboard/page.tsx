@@ -43,7 +43,10 @@ function CourseCard({
     (sum, m) => sum + m.lessons.reduce((s, l) => s + l.durationMinutes, 0),
     0
   );
-  const isStarted = completedCount > 0 || Object.keys(progress.progress).length > 0;
+  const isStarted = course.modules.some((m) => {
+    const p = progress.getModuleProgress(m.id);
+    return p.lessonsCompleted.length > 0 || p.quizScore !== null;
+  });
   const isCompleted = completedCount >= totalModules;
 
   return (
@@ -267,17 +270,6 @@ export default function Dashboard() {
               onOpen={() => goToCourse(course.id)}
             />
           ))}
-
-          {/* Coming soon placeholder */}
-          <div className="border-2 border-dashed border-borderGrey/40 rounded-2xl p-6 flex flex-col items-center justify-center text-center min-h-[300px]">
-            <BsJournals className="text-borderGrey mb-3" size={32} />
-            <h3 className="text-lg font-semibold text-darkGrey mb-1">
-              Más rutas próximamente
-            </h3>
-            <p className="text-sm text-darkGrey">
-              Nuevos contenidos sobre DeFi, NFTs y más.
-            </p>
-          </div>
         </div>
       </section>
     </DashboardLayout>

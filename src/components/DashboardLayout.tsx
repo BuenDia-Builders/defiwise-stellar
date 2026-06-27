@@ -22,8 +22,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     loading: xpLoading,
   } = useStellarProgress();
 
-  const course = courses[0];
-  const totalModules = course.modules.length;
+  const totalModules = courses.reduce(
+    (sum, c) => sum + c.modules.length,
+    0
+  );
 
   // Maximum XP achievable across every module of every learning path. Used to
   // derive the progress percentage from on-chain data.
