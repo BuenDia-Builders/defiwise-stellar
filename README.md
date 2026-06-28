@@ -9,6 +9,7 @@ DeFiWise lets users learn DeFi hands-on through learning paths with modules, les
 ## Stack
 
 - **Frontend:** Next.js 14, Tailwind CSS, DaisyUI
+- **Backend:** Next.js API Routes (admin-signed transactions)
 - **Wallet:** Freighter (Stellar)
 - **Smart Contracts:** Soroban (Rust) — XP Token + Badge NFT
 - **Network:** Stellar Testnet
@@ -22,12 +23,37 @@ DeFiWise lets users learn DeFi hands-on through learning paths with modules, les
 
 ## Getting Started
 
+### Frontend Setup
+
 ```bash
 npm install
 npm run dev
 ```
 
 Open http://localhost:3000
+
+### Backend Setup (Required for XP & Badges)
+
+The smart contracts require admin signatures for rewarding XP and minting badges. You need to set up the backend API:
+
+1. **Copy environment file:**
+   ```bash
+   copy .env.example .env
+   ```
+
+2. **Add your admin secret key to `.env`:**
+   ```bash
+   ADMIN_SECRET_KEY=SXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+   ```
+
+3. **Verify setup:**
+   ```bash
+   node scripts/test-backend.js
+   ```
+
+📖 **Full setup guide:** See [BACKEND_SETUP.md](./BACKEND_SETUP.md) for detailed instructions.
+
+📖 **API documentation:** See [src/app/api/README.md](./src/app/api/README.md) for endpoint reference.
 
 ## Smart Contracts
 
@@ -52,17 +78,25 @@ Requires Rust, `wasm32v1-none` target, and [Stellar CLI](https://developers.stel
 ```
 src/
   app/
+    api/            # Backend API routes (admin-signed transactions)
+      reward-quiz/  # Award XP tokens
+      mint-badge/   # Mint NFT badges
     home/           # Landing page (Hero, Advantages, Methodology)
     dashboard/      # Course catalog, modules, lessons, quizzes
       logros/       # Earned NFTs and certificates
   components/
     stellar/        # ConnectWalletButton, OnChainStatus
+    examples/       # Example integration components
   hooks/            # useStellarWallet, useProgress, useStellarProgress
-  lib/              # stellar.ts (contract interaction layer)
+  lib/
+    stellar.ts      # Contract interaction layer
+    api-client.ts   # Backend API client utilities
   data/             # Courses, modules, lessons, quiz questions
 contracts/
   xp-token/         # Fungible XP token with historical balance tracking
   badge-nft/        # NFT minted per completed module
+scripts/
+  test-backend.js   # Backend API test suite
 ```
 
 ## License
