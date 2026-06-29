@@ -17,9 +17,10 @@ interface QuizViewProps {
   module: Module;
   onBack: () => void;
   progress: ReturnType<typeof useProgress>;
+  txHash?: string;
 }
 
-export default function QuizView({ module, onBack, progress }: QuizViewProps) {
+export default function QuizView({ module, onBack, progress, txHash }: QuizViewProps) {
   const [currentQ, setCurrentQ] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -97,12 +98,28 @@ export default function QuizView({ module, onBack, progress }: QuizViewProps) {
                   height={120}
                   className="mx-auto mb-4"
                 />
-                <p className="text-sm text-darkOrange font-semibold">
-                  Ganaste un NFT + {module.rewardXP} XP
-                </p>
-                <p className="text-xs text-darkGrey mt-1">
-                  Este NFT será registrado en Stellar Testnet
-                </p>
+                {txHash ? (
+                  <>
+                    <p className="text-sm text-darkOrange font-semibold">
+                      Ganaste un NFT + {module.rewardXP} XP
+                    </p>
+                    <p className="text-xs text-darkGrey mt-1">
+                      Este NFT ha sido registrado en Stellar Testnet
+                    </p>
+                    <p className="text-[10px] text-grey mt-2 break-all">
+                      Tx: {txHash}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-darkOrange font-semibold">
+                      Ganaste {module.rewardXP} XP
+                    </p>
+                    <p className="text-xs text-grey mt-1">
+                      El minado de NFT y el registro en la blockchain estarán disponibles próximamente.
+                    </p>
+                  </>
+                )}
               </div>
             </>
           ) : (
