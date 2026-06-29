@@ -98,15 +98,54 @@ export function useStellarProgress() {
     [address, connected]
   );
 
+  const [rewarding, setRewarding] = useState(false);
+  const [rewardError, setRewardError] = useState<string | null>(null);
+
+  const rewardQuiz = useCallback(
+    async (
+      challengeId: string,
+      correct: number,
+      total: number,
+      maxXp: number
+    ): Promise<boolean> => {
+      if (!connected || !address) return false;
+
+      const alreadyDone = await checkChallengeCompleted(challengeId);
+      if (alreadyDone) return false;
+
+      setRewarding(true);
+      setRewardError(null);
+
+      try {
+        // TODO(#18): Replace with actual backend signer call
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        await fetchOnChainProgress();
+        setRewarding(false);
+        return true;
+      } catch (err) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Error al reclamar XP on-chain";
+        setRewardError(msg);
+        setRewarding(false);
+        return false;
+      }
+    },
+    [address, connected, checkChallengeCompleted, fetchOnChainProgress]
+  );
+
   return {
     ...status,
     connected: isHydrated ? connected : false,
     address,
+    rewarding,
+    rewardError,
     fetchOnChainProgress,
-    // Friendly alias used by UI widgets to manually trigger a balance refresh.
     refresh: fetchOnChainProgress,
     checkChallengeCompleted,
     checkHasBadge,
+    rewardQuiz,
     isHydrated,
   };
 }

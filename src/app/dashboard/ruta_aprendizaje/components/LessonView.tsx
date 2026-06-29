@@ -9,6 +9,7 @@ interface LessonViewProps {
   lessonIndex: number;
   onBack: () => void;
   onNext: (nextIndex: number) => void;
+  onPrevious: () => void;
   progress: ReturnType<typeof useProgress>;
 }
 
@@ -17,6 +18,7 @@ export default function LessonView({
   lessonIndex,
   onBack,
   onNext,
+  onPrevious,
 }: LessonViewProps) {
   const lesson = module.lessons[lessonIndex];
   const isLast = lessonIndex === module.lessons.length - 1;
@@ -119,13 +121,7 @@ export default function LessonView({
       {/* Navigation */}
       <div className="flex justify-between items-center">
         <button
-          onClick={() => {
-            if (lessonIndex > 0) {
-              onNext(lessonIndex); // hack: we go back by re-setting
-            } else {
-              onBack();
-            }
-          }}
+          onClick={onPrevious}
           disabled={lessonIndex === 0}
           className="flex items-center gap-2 px-6 py-3 rounded-xl text-darkGrey hover:text-darkOrange disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
