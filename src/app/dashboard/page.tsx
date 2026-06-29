@@ -157,6 +157,9 @@ export default function Dashboard() {
           module={mod}
           lessonIndex={view.lessonIndex}
           onBack={() => goToCourse(view.courseId)}
+          onPrevious={() =>
+            setView({ ...view, lessonIndex: view.lessonIndex - 1 })
+          }
           onNext={(nextIndex) => {
             if (nextIndex < mod.lessons.length) {
               progressHook.completeLesson(
