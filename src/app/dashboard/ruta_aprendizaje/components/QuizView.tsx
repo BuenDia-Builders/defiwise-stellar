@@ -4,6 +4,9 @@ import { useState } from "react";
 import Image from "next/image";
 import { Module } from "@/data/courses";
 import { useProgress } from "@/hooks/useProgress";
+import { useStellarWallet } from "@/hooks/useStellarWallet";
+import { useStellarProgress } from "@/hooks/useStellarProgress";
+import toast from "react-hot-toast";
 import {
   BsArrowLeft,
   BsArrowRight,
@@ -26,6 +29,8 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
   const [answered, setAnswered] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [finished, setFinished] = useState(false);
+  const wallet = useStellarWallet();
+  const stellarProgress = useStellarProgress();
 
   const quiz = module.quiz;
   const question = quiz[currentQ];
@@ -48,6 +53,26 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
       const finalScore = Math.round((correctCount / totalQuestions) * 100);
       progress.completeQuiz(module.id, finalScore, module.rewardXP);
       setFinished(true);
+
+      if (finalScore >= 75) {
+        if (wallet.connected) {
+          stellarProgress
+            .rewardQuiz(
+              module.id,
+              finalCorrect,
+              totalQuestions,
+              module.rewardXP
+            )
+            .then((ok) => {
+              if (!ok) return;
+              toast.success("XP registrado en Stellar Testnet");
+            });
+        } else {
+          toast("Conectá tu wallet para registrar XP en Stellar Testnet", {
+            icon: "💡",
+          });
+        }
+      }
     }
   };
 
@@ -90,6 +115,12 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
                 </strong>{" "}
                 de aciertos.
               </p>
+              {stellarProgress.rewarding && (
+                <div className="flex items-center justify-center gap-2 text-sm text-darkGrey mb-4">
+                  <span className="inline-block w-4 h-4 border-2 border-darkOrange/30 border-t-darkOrange rounded-full animate-spin" />
+                  Registrando XP en Stellar Testnet...
+                </div>
+              )}
               <div className="bg-lightYellow rounded-2xl p-6 mb-6">
                 <Image
                   src={module.nftImage}
