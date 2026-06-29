@@ -1,12 +1,13 @@
 "use client";
 
 import AsideMenuBtn from "./AsideMenuBtn";
-import { BsAward, BsBook, BsJournals, BsSearch, BsStars } from "react-icons/bs";
+import { BsAward, BsBook, BsJournals, BsSearch, BsStars, BsBarChartFill } from "react-icons/bs";
 
 export default function AsideMenu() {
   return (
     <aside className="w-[100%] md:w-auto">
       <AsideMenuBtn value="Ruta de aprendizaje" icon={BsBook} fill="darkOrange" href="/dashboard" />
+      <AsideMenuBtn value="Progreso" icon={BsBarChartFill} fill="#E97D1A" href="/dashboard/progress" />
       <AsideMenuBtn value="Mis logros" icon={BsAward} fill="#68CC58" href="/dashboard/logros" />
       <AsideMenuBtn value="Ver otros cursos" icon={BsJournals} fill="#68CC58" href="#" />
       <AsideMenuBtn value="Staking" icon={BsStars} fill="#CDCDCD" href="#" />
