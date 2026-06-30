@@ -6,6 +6,7 @@ import { Module } from "@/data/courses";
 import { useProgress } from "@/hooks/useProgress";
 import { useStellarWallet } from "@/hooks/useStellarWallet";
 import { useStellarProgress } from "@/hooks/useStellarProgress";
+import { rewardQuiz, mintBadge } from "@/lib/api-client";
 import toast from "react-hot-toast";
 import {
   BsArrowLeft,
@@ -29,6 +30,11 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
   const [answered, setAnswered] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [badgeMinted, setBadgeMinted] = useState(false);
+
+  const { address, connected } = useStellarWallet();
+  const { checkHasBadge, refresh: refreshProgress } = useStellarProgress();
   const wallet = useStellarWallet();
   const stellarProgress = useStellarProgress();
 
@@ -44,14 +50,26 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentQ + 1 < totalQuestions) {
       setCurrentQ((prev) => prev + 1);
       setSelectedOption(null);
       setAnswered(false);
     } else {
+      const finalCorrect =
+        correctCount +
+        (question.options[selectedOption!]?.isCorrect ? 1 : 0);
+      const finalScore = Math.round((finalCorrect / totalQuestions) * 100);
+      
+      // Update local progress
       const finalScore = Math.round((correctCount / totalQuestions) * 100);
       progress.completeQuiz(module.id, finalScore, module.rewardXP);
+      
+      // Submit to blockchain if wallet is connected
+      if (connected && address) {
+        await submitToBlockchain(finalCorrect, totalQuestions, finalScore);
+      }
+      
       setFinished(true);
 
       if (finalScore >= 75) {
@@ -76,12 +94,86 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
     }
   };
 
+  const submitToBlockchain = async (
+    correct: number,
+    total: number,
+    score: number
+  ) => {
+    if (!address) return;
+
+    setSubmitting(true);
+    try {
+      // First, check if badge already exists
+      const hasBadgeAlready = await checkHasBadge(module.id);
+      
+      if (hasBadgeAlready) {
+        toast.success("¡Ya tienes este badge registrado on-chain!");
+        setBadgeMinted(true);
+        setSubmitting(false);
+        return;
+      }
+
+      // Step 1: Reward XP via reward_quiz
+      const challengeId = `${module.id}-quiz`;
+      const xpResult = await rewardQuiz({
+        userPublicKey: address,
+        challengeId,
+        correct,
+        total,
+        maxXp: module.rewardXP,
+      });
+
+      console.log("XP rewarded:", xpResult);
+
+      // Step 2: Mint badge if quiz passed (score >= 75)
+      if (score >= 75) {
+        const badgeResult = await mintBadge({
+          userPublicKey: address,
+          moduleId: module.id,
+          moduleTitle: module.title,
+          xpEarned: xpResult.xpRewarded,
+          quizScore: score,
+        });
+
+        console.log("Badge minted:", badgeResult);
+        setBadgeMinted(true);
+        
+        toast.success(
+          `🏆 ¡Badge NFT registrado on-chain! +${xpResult.xpRewarded} XP`
+        );
+      } else {
+        toast.success(`+${xpResult.xpRewarded} XP ganados`);
+      }
+
+      // Refresh on-chain progress
+      await refreshProgress();
+    } catch (error) {
+      console.error("Blockchain submission error:", error);
+      
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+      
+      if (errorMessage.includes("already completed")) {
+        toast.error("Ya completaste este quiz on-chain");
+      } else if (errorMessage.includes("already minted")) {
+        toast.error("Ya tienes este badge on-chain");
+        setBadgeMinted(true);
+      } else {
+        toast.error(
+          "No se pudo registrar on-chain. Tu progreso se guardó localmente."
+        );
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleRetry = () => {
     setCurrentQ(0);
     setSelectedOption(null);
     setAnswered(false);
     setCorrectCount(0);
     setFinished(false);
+    setBadgeMinted(false);
   };
 
   // Results screen
@@ -129,6 +221,28 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
                   height={120}
                   className="mx-auto mb-4"
                 />
+                <p className="text-sm text-darkOrange font-semibold">
+                  Ganaste un NFT + {module.rewardXP} XP
+                </p>
+                {connected ? (
+                  badgeMinted ? (
+                    <p className="text-xs text-active mt-2 flex items-center justify-center gap-1">
+                      <BsCheckCircleFill size={12} />
+                      Badge registrado on-chain en Stellar Testnet
+                    </p>
+                  ) : submitting ? (
+                    <p className="text-xs text-darkGrey mt-2">
+                      Registrando on-chain...
+                    </p>
+                  ) : (
+                    <p className="text-xs text-darkGrey mt-2">
+                      Badge guardado localmente (requiere reconexión on-chain)
+                    </p>
+                  )
+                ) : (
+                  <p className="text-xs text-darkGrey mt-2">
+                    Conectá tu wallet para registrarlo on-chain
+                  </p>
                 {txHash ? (
                   <>
                     <p className="text-sm text-darkOrange font-semibold">
@@ -175,6 +289,7 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
             <button
               onClick={onBack}
               className="px-6 py-3 rounded-xl border border-borderGrey text-darkGrey hover:border-darkOrange hover:text-darkOrange transition-colors"
+              disabled={submitting}
             >
               Volver
             </button>
@@ -182,6 +297,7 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
               <button
                 onClick={handleRetry}
                 className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-darkOrange to-lightOrange text-white font-medium"
+                disabled={submitting}
               >
                 <BsArrowRepeat size={16} />
                 Reintentar
