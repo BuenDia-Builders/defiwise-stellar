@@ -8,6 +8,7 @@ import {
   getHistoricalXP,
   isChallengeCompleted,
   hasBadge,
+  meetsXPRequirement,
 } from "@/lib/stellar";
 
 export interface OnChainStatus {
@@ -98,6 +99,18 @@ export function useStellarProgress() {
     [address, connected]
   );
 
+  const checkMeetsRequirement = useCallback(
+    async (minXp: number | bigint): Promise<boolean> => {
+      if (!connected || !address) return false;
+      try {
+        return await meetsXPRequirement(address, minXp);
+      } catch {
+        return status.historicalXP >= BigInt(minXp);
+      }
+    },
+    [address, connected, status.historicalXP]
+  );
+
   const [rewarding, setRewarding] = useState(false);
   const [rewardError, setRewardError] = useState<string | null>(null);
 
@@ -108,6 +121,9 @@ export function useStellarProgress() {
       total: number,
       maxXp: number
     ): Promise<boolean> => {
+      void correct;
+      void total;
+      void maxXp;
       if (!connected || !address) return false;
 
       const alreadyDone = await checkChallengeCompleted(challengeId);
@@ -145,6 +161,7 @@ export function useStellarProgress() {
     refresh: fetchOnChainProgress,
     checkChallengeCompleted,
     checkHasBadge,
+    checkMeetsRequirement,
     rewardQuiz,
     isHydrated,
   };

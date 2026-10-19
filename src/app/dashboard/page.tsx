@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { courses, Course } from "@/data/courses";
 import { useProgress } from "@/hooks/useProgress";
+import { useStellarProgress } from "@/hooks/useStellarProgress";
 import DashboardLayout from "@/components/DashboardLayout";
 import ModuleCard from "@/app/dashboard/ruta_aprendizaje/components/ModuleCard";
 import LessonView from "@/app/dashboard/ruta_aprendizaje/components/LessonView";
@@ -139,6 +140,7 @@ function CourseCard({
 
 export default function Dashboard() {
   const progressHook = useProgress();
+  const stellarProgress = useStellarProgress();
   const [view, setView] = useState<View>({ type: "catalog" });
 
   const getCourse = (id: string) => courses.find((c) => c.id === id)!;
@@ -220,33 +222,62 @@ export default function Dashboard() {
           <p className="text-grey mb-8">{course.description}</p>
 
           <div className="space-y-4">
-            {course.modules.map((mod, index) => (
-              <ModuleCard
-                key={mod.id}
-                module={mod}
-                index={index}
-                unlocked={progressHook.isModuleUnlocked(
-                  index,
-                  course.modules
-                )}
-                progress={progressHook.getModuleProgress(mod.id)}
-                onStartLesson={(lessonIndex) =>
-                  setView({
-                    type: "lesson",
-                    courseId: course.id,
-                    moduleId: mod.id,
-                    lessonIndex,
-                  })
-                }
-                onStartQuiz={() =>
-                  setView({
-                    type: "quiz",
-                    courseId: course.id,
-                    moduleId: mod.id,
-                  })
-                }
-              />
-            ))}
+            {course.modules.map((mod, index) => {
+              const previousDone = progressHook.isModuleUnlocked(
+                index,
+                course.modules
+              );
+              const minXpRequired = mod.minXp ?? 0;
+              const hasMinXp = minXpRequired > 0;
+              const meetsOnChain =
+                !hasMinXp ||
+                (stellarProgress.connected &&
+                  stellarProgress.historicalXP >= BigInt(minXpRequired));
+              const isUnlocked = previousDone && meetsOnChain;
+
+              let lockedReason:
+                | "previous_module"
+                | "wallet_required"
+                | "insufficient_xp" = "previous_module";
+              if (!previousDone) {
+                lockedReason = "previous_module";
+              } else if (hasMinXp && !stellarProgress.connected) {
+                lockedReason = "wallet_required";
+              } else if (
+                hasMinXp &&
+                stellarProgress.historicalXP < BigInt(minXpRequired)
+              ) {
+                lockedReason = "insufficient_xp";
+              }
+
+              return (
+                <ModuleCard
+                  key={mod.id}
+                  module={mod}
+                  index={index}
+                  unlocked={isUnlocked}
+                  walletConnected={stellarProgress.connected}
+                  historicalXP={stellarProgress.historicalXP}
+                  lockedReason={lockedReason}
+                  progress={progressHook.getModuleProgress(mod.id)}
+                  onStartLesson={(lessonIndex) =>
+                    setView({
+                      type: "lesson",
+                      courseId: course.id,
+                      moduleId: mod.id,
+                      lessonIndex,
+                    })
+                  }
+                  onStartQuiz={() =>
+                    setView({
+                      type: "quiz",
+                      courseId: course.id,
+                      moduleId: mod.id,
+                    })
+                  }
+                />
+              );
+            })}
           </div>
         </section>
       </DashboardLayout>

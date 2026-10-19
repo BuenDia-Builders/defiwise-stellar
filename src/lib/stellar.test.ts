@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { buildRewardQuizArgs, buildMintBadgeArgs, computeXPPercent } from './stellar';
 import * as StellarSdk from '@stellar/stellar-sdk';
+import {
+  buildRewardQuizArgs,
+  buildMintBadgeArgs,
+  computeXPPercent,
+  buildMeetsRequirementArgs,
+  meetsXPRequirement,
+} from './stellar';
 
 describe('stellar validations', () => {
   describe('buildRewardQuizArgs', () => {
@@ -81,4 +87,40 @@ describe('stellar validations', () => {
       expect(computeXPPercent(BigInt(500), 200)).toBe(100);
     });
   });
+
+  describe('buildMeetsRequirementArgs (Issue #38 on-chain gating)', () => {
+    it('throws error when userPublicKey is empty', () => {
+      expect(() => buildMeetsRequirementArgs('', 50)).toThrow('userPublicKey cannot be empty');
+      expect(() => buildMeetsRequirementArgs('   ', 50)).toThrow('userPublicKey cannot be empty');
+    });
+
+    it('throws error when minXp is negative', () => {
+      expect(() => buildMeetsRequirementArgs('GASHSELFFKPP5BTMD73FBODXO65MLGP4JCRIXQNEM3RYCWMRKSGOUVHC', -10)).toThrow('minXp cannot be negative');
+    });
+
+    it('returns valid ScVal array for valid address and positive minXp', () => {
+      const args = buildMeetsRequirementArgs('GASHSELFFKPP5BTMD73FBODXO65MLGP4JCRIXQNEM3RYCWMRKSGOUVHC', 50);
+      expect(args.length).toBe(2);
+      expect(args[0]).toBeInstanceOf(StellarSdk.xdr.ScVal);
+      expect(args[1]).toBeInstanceOf(StellarSdk.xdr.ScVal);
+    });
+
+    it('accepts bigint for minXp', () => {
+      const args = buildMeetsRequirementArgs('GASHSELFFKPP5BTMD73FBODXO65MLGP4JCRIXQNEM3RYCWMRKSGOUVHC', BigInt(100));
+      expect(args.length).toBe(2);
+    });
+  });
+
+  describe('meetsXPRequirement pure validation checks', () => {
+    it('returns false when userPublicKey is empty', async () => {
+      const res = await meetsXPRequirement('', 50);
+      expect(res).toBe(false);
+    });
+
+    it('returns true when minXp is 0 or negative without querying contract', async () => {
+      const res = await meetsXPRequirement('GASHSELFFKPP5BTMD73FBODXO65MLGP4JCRIXQNEM3RYCWMRKSGOUVHC', 0);
+      expect(res).toBe(true);
+    });
+  });
 });
+
