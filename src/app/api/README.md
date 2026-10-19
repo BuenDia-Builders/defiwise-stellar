@@ -33,21 +33,23 @@ Since these functions require the admin's signature, they cannot be called direc
 3. **Duplicate Prevention**: Checks if challenge/badge already exists before signing
 4. **Rate Limiting**: Per-user rate limiting to prevent abuse
 5. **Stellar Key Validation**: Validates public key format before processing
+6. **Server-Side Quiz Integrity Verification (Issue #36)**: Recalculates quiz score from canonical answers in `courses.ts` and enforces canonical `maxXp` server-side to prevent client score tampering
 
 ## API Endpoints
 
 ### POST /api/reward-quiz
 
-Awards XP tokens to a user for completing a quiz challenge.
+Awards XP tokens to a user for completing a quiz challenge. Enforces server-side quiz integrity verification: validates answers against canonical course data, recalculates score, and enforces canonical module `maxXp`.
 
 **Request Body:**
 ```typescript
 {
-  userPublicKey: string;    // User's Stellar public key
-  challengeId: string;      // Unique challenge identifier
-  correct: number;          // Number of correct answers
-  total: number;            // Total number of questions
-  maxXp: number;            // Maximum XP available for perfect score
+  userPublicKey: string;                                          // User's Stellar public key
+  challengeId: string;                                            // Unique challenge identifier (e.g., "mod-1-quiz")
+  answers: number[] | string[] | Record<string, number | string>; // Selected option indices or question mapping
+  correct?: number;                                               // Optional: claimed correct answers (verified against server evaluation)
+  total?: number;                                                 // Optional: claimed total questions (verified against canonical quiz length)
+  maxXp?: number;                                                 // Optional: claimed maximum XP (strictly derived from canonical courses.ts)
 }
 ```
 
@@ -153,10 +155,10 @@ async function handleQuizComplete() {
   try {
     const result = await rewardQuiz({
       userPublicKey: userWallet.publicKey,
-      challengeId: "defi-basics-01",
-      correct: 8,
-      total: 10,
-      maxXp: 100,
+      challengeId: "mod-1-quiz",
+      answers: [1, 1, 0, 1], // Selected option indices evaluated server-side
+      correct: 4,
+      total: 4,
     });
     
     toast.success(`Earned ${result.xpRewarded} XP!`);
@@ -217,10 +219,8 @@ curl -X POST http://localhost:3000/api/reward-quiz \
   -H "Content-Type: application/json" \
   -d '{
     "userPublicKey": "GXXXXXX...",
-    "challengeId": "test-quiz-01",
-    "correct": 8,
-    "total": 10,
-    "maxXp": 100
+    "challengeId": "mod-1-quiz",
+    "answers": [1, 1, 0, 1]
   }'
 
 # Test mint-badge endpoint
@@ -273,7 +273,7 @@ Consider adding:
 3. **Webhook Notifications**: Notify users of completed transactions
 4. **Admin Dashboard**: UI for monitoring transactions
 5. **Multi-signature**: Require multiple admin signatures for high-value operations
-6. **Challenge Validation**: Verify quiz answers server-side before signing
+6. **Challenge Validation**: [COMPLETED - Issue #36] Server-side quiz integrity check and score recalculation before admin signing
 7. **Gas Fee Optimization**: Batch multiple operations
 8. **Retry Logic**: Automatic retry for failed transactions
 

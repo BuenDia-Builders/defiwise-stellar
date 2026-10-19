@@ -6,9 +6,10 @@
 export interface RewardQuizRequest {
   userPublicKey: string;
   challengeId: string;
-  correct: number;
-  total: number;
-  maxXp: number;
+  answers: number[] | string[] | Record<string, number | string>;
+  correct?: number;
+  total?: number;
+  maxXp?: number;
 }
 
 export interface RewardQuizResponse {

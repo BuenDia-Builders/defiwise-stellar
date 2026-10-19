@@ -104,14 +104,18 @@ export function useStellarProgress() {
   const rewardQuiz = useCallback(
     async (
       challengeId: string,
-      correct: number,
-      total: number,
-      maxXp: number
+      _correct: number,
+      _total: number,
+      _maxXp: number
     ): Promise<boolean> => {
       if (!connected || !address) return false;
 
       const alreadyDone = await checkChallengeCompleted(challengeId);
       if (alreadyDone) return false;
+
+      void _correct;
+      void _total;
+      void _maxXp;
 
       setRewarding(true);
       setRewardError(null);

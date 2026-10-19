@@ -7,6 +7,7 @@ import {
   buildRewardQuizArgs,
   isChallengeCompleted,
 } from "@/lib/stellar";
+import { verifyQuizIntegrity } from "@/lib/quiz-integrity";
 
 // Rate limiting store (in production, use Redis or a proper rate limiter)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -36,42 +37,12 @@ export async function POST(request: NextRequest) {
   try {
     // Parse request body
     const body = await request.json();
-    const { userPublicKey, challengeId, correct, total, maxXp } = body;
+    const { userPublicKey, challengeId, answers, correct, total, maxXp } = body;
 
     // Validate required fields
     if (!userPublicKey || typeof userPublicKey !== "string") {
       return NextResponse.json(
         { error: "userPublicKey is required and must be a string" },
-        { status: 400 }
-      );
-    }
-
-    if (!challengeId || typeof challengeId !== "string") {
-      return NextResponse.json(
-        { error: "challengeId is required and must be a string" },
-        { status: 400 }
-      );
-    }
-
-    if (
-      typeof correct !== "number" ||
-      typeof total !== "number" ||
-      correct < 0 ||
-      total <= 0 ||
-      correct > total
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "correct and total must be valid numbers with 0 <= correct <= total",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (typeof maxXp !== "number" || maxXp <= 0) {
-      return NextResponse.json(
-        { error: "maxXp must be a positive number" },
         { status: 400 }
       );
     }
@@ -95,6 +66,32 @@ export async function POST(request: NextRequest) {
         { status: 429 }
       );
     }
+
+    // Server-side quiz integrity verification (Issue #36)
+    // Recalculates score against canonical courses.ts, validates answers,
+    // enforces server-side maxXp, and prevents client score tampering.
+    const integrity = verifyQuizIntegrity({
+      challengeId,
+      answers,
+      correct,
+      total,
+      maxXp,
+    });
+
+    if (!integrity.valid) {
+      return NextResponse.json(
+        {
+          error: integrity.error,
+          details: integrity.details,
+        },
+        { status: integrity.statusCode }
+      );
+    }
+
+    const finalCorrect = integrity.correct!;
+    const finalTotal = integrity.total!;
+    const finalMaxXp = integrity.maxXp!;
+    const xpRewarded = integrity.xpRewarded!;
 
     // Check if challenge already completed (early validation)
     const alreadyCompleted = await isChallengeCompleted(
@@ -122,13 +119,13 @@ export async function POST(request: NextRequest) {
     const adminKeypair = StellarSdk.Keypair.fromSecret(adminSecretKey);
     const adminPublicKey = adminKeypair.publicKey();
 
-    // Build the contract call arguments
+    // Build the contract call arguments with verified server-side values
     const args = buildRewardQuizArgs(
       userPublicKey,
       challengeId,
-      correct,
-      total,
-      maxXp
+      finalCorrect,
+      finalTotal,
+      finalMaxXp
     );
 
     // Get admin account
@@ -228,14 +225,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate actual XP rewarded
-    const xpRewarded = Math.floor((maxXp * correct) / total);
-
     // Success!
     return NextResponse.json({
       success: true,
       hash: txHash,
       xpRewarded,
+      scorePercent: integrity.scorePercent,
       message: `Successfully rewarded ${xpRewarded} XP for completing challenge ${challengeId}`,
     });
   } catch (error) {
