@@ -140,6 +140,7 @@ function CourseCard({
 export default function Dashboard() {
   const progressHook = useProgress();
   const [view, setView] = useState<View>({ type: "catalog" });
+  const [swapTxHash, setSwapTxHash] = useState<string | undefined>(undefined);
 
   const getCourse = (id: string) => courses.find((c) => c.id === id)!;
 
@@ -180,6 +181,7 @@ export default function Dashboard() {
             }
           }}
           progress={progressHook}
+          onSwapTxHash={setSwapTxHash}
         />
       </DashboardLayout>
     );
@@ -195,6 +197,7 @@ export default function Dashboard() {
           module={mod}
           onBack={() => goToCourse(view.courseId)}
           progress={progressHook}
+          txHash={swapTxHash}
         />
       </DashboardLayout>
     );

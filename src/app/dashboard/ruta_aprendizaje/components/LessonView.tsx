@@ -3,6 +3,7 @@
 import { Module } from "@/data/courses";
 import { useProgress } from "@/hooks/useProgress";
 import { BsArrowLeft, BsArrowRight, BsCheckCircleFill } from "react-icons/bs";
+import { DEXSwapPractice } from "@/components/DEXSwapPractice";
 
 interface LessonViewProps {
   module: Module;
@@ -11,6 +12,7 @@ interface LessonViewProps {
   onNext: (nextIndex: number) => void;
   onPrevious: () => void;
   progress: ReturnType<typeof useProgress>;
+  onSwapTxHash?: (txHash: string) => void;
 }
 
 export default function LessonView({
@@ -19,6 +21,7 @@ export default function LessonView({
   onBack,
   onNext,
   onPrevious,
+  onSwapTxHash,
 }: LessonViewProps) {
   const lesson = module.lessons[lessonIndex];
   const isLast = lessonIndex === module.lessons.length - 1;
@@ -117,6 +120,19 @@ export default function LessonView({
       <div className="bg-white rounded-2xl border border-borderGrey/30 p-8 mb-8">
         {renderContent(lesson.content)}
       </div>
+
+      {/* Interactive DEX Swap Practice Component */}
+      {(lesson.id === "stellar-les-1-2" || lesson.interactivePractice === "dex-swap") && (
+        <div className="mb-8">
+          <DEXSwapPractice
+            initialFromAsset="XLM"
+            initialToAsset="USDC"
+            onSwapComplete={(txHash) => {
+              if (onSwapTxHash) onSwapTxHash(txHash);
+            }}
+          />
+        </div>
+      )}
 
       {/* Navigation */}
       <div className="flex justify-between items-center">

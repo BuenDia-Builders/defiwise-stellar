@@ -15,6 +15,7 @@ export interface Lesson {
   description: string;
   content: string; // markdown-like content for the theory
   durationMinutes: number;
+  interactivePractice?: "dex-swap" | "etherfuse-yields";
 }
 
 export interface Module {
@@ -550,6 +551,7 @@ Con **Soroban**, Stellar sumó contratos inteligentes sin sacrificar eficiencia:
             description:
               "El activo nativo, cómo funcionan las cuentas y la confianza en activos emitidos.",
             durationMinutes: 12,
+            interactivePractice: "dex-swap",
             content: `## XLM, cuentas y trustlines
 
 ### XLM (Lumen)
@@ -566,6 +568,14 @@ Cada cuenta tiene:
 
 ### Trustlines
 En Stellar, para recibir un activo emitido por un tercero (ej: USDC, un token custom), tu cuenta debe abrir una **trustline** hacia ese emisor. Es una forma explícita de decir: "confío en recibir este activo de este emisor".
+
+### Exchanges Descentralizados (DEX) y AMMs
+Stellar incorpora un DEX a nivel de protocolo, complementado por protocolos Automated Market Maker (AMM) como **Soroswap** y **Aquarius**.
+- **Swaps On-Chain**: Los usuarios intercambian pares como XLM/USDC o XLM/AQUA directamente desde su wallet no custodial.
+- **Firma Criptográfica**: Cada intercambio requiere una firma de la wallet del usuario, garantizando total soberanía sin custodios centrales.
+- **Slippage y Liquidez**: El deslizamiento mide la variación entre el precio cotizado y el precio final de ejecución en el pool.
+
+*Practica ejecutando un swap real en Stellar Testnet utilizando el simulador interactivo a continuación:*
 
 ### Anchors
 Los **anchors** son entidades reguladas que conectan el mundo fiat con Stellar: depositás pesos o dólares y recibís un token representativo on-chain, y viceversa.`,
@@ -649,6 +659,28 @@ DeFiWise usa **Stellar Testnet** para que practiques sin riesgo.`,
               { text: "~10 minutos", isCorrect: false },
               { text: "2-5 días", isCorrect: false },
               { text: "1 hora", isCorrect: false },
+            ],
+          },
+          {
+            id: "stellar-q-1-5",
+            prompt: "¿Quién firma las transacciones al ejecutar un swap en un DEX o AMM de Stellar?",
+            options: [
+              {
+                text: "La wallet del propio usuario mediante su clave criptográfica",
+                isCorrect: true,
+              },
+              {
+                text: "El servidor central del exchange",
+                isCorrect: false,
+              },
+              {
+                text: "El banco emisor de la moneda fiat",
+                isCorrect: false,
+              },
+              {
+                text: "Un validador asignado de forma aleatoria",
+                isCorrect: false,
+              },
             ],
           },
         ],

@@ -73,6 +73,29 @@ cargo test
 
 Requires Rust, `wasm32v1-none` target, and [Stellar CLI](https://developers.stellar.org/docs/tools/developer-tools/cli/install-cli).
 
+## Práctica Interactiva de Swaps en DEX (Stellar Testnet)
+
+DeFiWise incluye un simulador interactivo de intercambios descentralizados (DEX) en `LessonView` para que los estudiantes experimenten swaps reales en Stellar Testnet firmados desde su propia wallet (no por admin).
+
+### Tokens de Testnet Soportados
+
+| Token | Símbolo | Tipo de Activo | Issuer en Testnet / Dirección | Utilidad Didáctica |
+|---|---|---|---|---|
+| **Stellar Lumen** | `XLM` | Nativo | N/A (protocolo base) | Gas fees, activo base y reserva |
+| **USD Coin** | `USDC` | Credit Alphanum4 | `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` (Circle Testnet) | Stablecoin de referencia en swaps DeFi |
+| **Aquarius** | `AQUA` | Credit Alphanum4 | `GBNZILSTVQZ4R7IKQDGHYGY2Q2GLCEW4JHGTH6UDWOZZVWDINQBQBC7J` | Token de gobernanza y liquidez AMM |
+| **Euro Coin** | `EURC` | Credit Alphanum4 | `GD6WACRODDNGOTV4D2FLHTOOEDAE4QL4KAZNP4JRBXXYZZ25V4W2V626` | Stablecoin euro regulada |
+
+### Arquitectura de Ejecución y Firma del Usuario
+1. **Firma Exclusiva del Usuario**: A diferencia de los endpoints de minting de certificados (que usan la clave de administrador), los swaps en el DEX son construidos en el cliente y **firmados exclusivamente por la wallet del usuario** (`signTransaction`) para garantizar la comprensión práctica de la custodia no custodial.
+2. **Financiamiento Testnet Inmediato (Friendbot)**: Si la cuenta del estudiante no posee fondos, el componente incluye un botón de 1-click para solicitar 10,000 XLM de prueba a Friendbot (`https://friendbot.stellar.org`).
+3. **Métricas de AMM Didácticas**: Los estudiantes observan en tiempo real el cálculo de tasa de cambio, comisión del pool (0.3%), impacto de precio (price impact) y tolerancia a deslizamiento (slippage: 0.5%, 1%, 2%).
+4. **Verificación de Transacción On-Chain**: Cada swap exitoso genera un `txHash` en Stellar Testnet con enlace directo a [Stellar Expert](https://stellar.expert/explorer/testnet) y se propaga al quiz/challenge del módulo.
+
+### Límites de Riesgo Educativo (Sandbox Boundaries)
+- **Cero Riesgo Financiero**: Todas las operaciones se ejecutan estrictamente en **Stellar Testnet** (`Test SDF Network ; September 2015`). Los tokens de prueba no tienen valor económico ni pueden transferirse a Mainnet.
+- **Entorno Aislado**: Los estudiantes pueden probar configuraciones extremas de slippage y montos sin riesgo de pérdida de capital, aprendiendo cómo funcionan las curvas de producto constante $x \times y = k$ en DeFi.
+
 ## Project Structure
 
 ```
