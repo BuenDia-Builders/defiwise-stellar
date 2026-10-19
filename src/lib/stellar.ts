@@ -215,6 +215,60 @@ export async function hasBadge(
 }
 
 /**
+ * Build arguments for Soroban meets_requirement call.
+ */
+export function buildMeetsRequirementArgs(
+  userPublicKey: string,
+  minXp: number | bigint
+): StellarSdk.xdr.ScVal[] {
+  if (!userPublicKey || userPublicKey.trim() === "") {
+    throw new Error("userPublicKey cannot be empty");
+  }
+  const minVal = typeof minXp === "number" ? BigInt(minXp) : minXp;
+  if (minVal < BigInt(0)) {
+    throw new Error("minXp cannot be negative");
+  }
+  return [
+    new StellarSdk.Address(userPublicKey).toScVal(),
+    StellarSdk.nativeToScVal(minVal, { type: "i128" }),
+  ];
+}
+
+/**
+ * Check if user meets the minimum XP requirement on-chain (gating).
+ *
+ * INVARIANT (Issue #38):
+ * On-chain gating evaluates strictly against `historical_balance` (an append-only
+ * ledger accumulator in the Soroban contract that never decreases), NEVER current/liquid balance.
+ * This guarantees that spending, burning, or transferring XP tokens never revokes
+ * earned course progress or locks already unlocked modules.
+ */
+export async function meetsXPRequirement(
+  userPublicKey: string,
+  minXp: number | bigint
+): Promise<boolean> {
+  if (!userPublicKey || userPublicKey.trim() === "") {
+    return false;
+  }
+  const minVal = typeof minXp === "number" ? BigInt(minXp) : minXp;
+  if (minVal <= BigInt(0)) {
+    return true;
+  }
+  try {
+    const args = buildMeetsRequirementArgs(userPublicKey, minVal);
+    const result = await queryContract(
+      CONTRACTS.XP_TOKEN,
+      "meets_requirement",
+      args
+    );
+    if (!result) return false;
+    return StellarSdk.scValToNative(result) as boolean;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Build a reward_quiz transaction (needs admin signing via backend in production,
  * for testnet demo the user signs and admin is the signer)
  */

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import QuizView from "./QuizView";
 import React from "react";
+import { useProgress } from "@/hooks/useProgress";
 
 afterEach(() => {
   cleanup();
@@ -11,7 +12,7 @@ afterEach(() => {
 // Mock next/image to avoid issues in Node test environment
 vi.mock("next/image", () => ({
   __esModule: true,
-  default: (props: any) => {
+  default: (props: React.ComponentProps<"img">) => {
     // eslint-disable-next-line @next/next/no-img-element
     return <img {...props} src={props.src} alt={props.alt || ""} />;
   },
@@ -62,7 +63,7 @@ describe("QuizView", () => {
       <QuizView
         module={mockModule}
         onBack={onBack}
-        progress={mockProgress as any}
+        progress={mockProgress as unknown as ReturnType<typeof useProgress>}
       />
     );
 
@@ -93,7 +94,7 @@ describe("QuizView", () => {
       <QuizView
         module={mockModule}
         onBack={onBack}
-        progress={mockProgress as any}
+        progress={mockProgress as unknown as ReturnType<typeof useProgress>}
       />
     );
     
@@ -130,7 +131,7 @@ describe("QuizView", () => {
       <QuizView
         module={mockModule}
         onBack={onBack}
-        progress={mockProgress as any}
+        progress={mockProgress as unknown as ReturnType<typeof useProgress>}
         txHash={mockTxHash}
       />
     );

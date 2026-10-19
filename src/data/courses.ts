@@ -25,6 +25,7 @@ export interface Module {
   lessons: Lesson[];
   quiz: Question[];
   rewardXP: number;
+  minXp?: number; // On-chain minimum historical XP required to unlock (Issue #38)
   nftImage: string; // path to the NFT image earned on completion
 }
 
@@ -202,6 +203,7 @@ En este curso trabajamos en **Stellar Testnet** para que puedas practicar sin ri
         description: "Descubrí cómo el código reemplaza a los intermediarios y garantiza la transparencia.",
         color: "pink",
         rewardXP: 150,
+        minXp: 50,
         nftImage: "/nft/nft2.svg",
         lessons: [
           {
@@ -353,6 +355,7 @@ Stellar ya era excelente para pagos rápidos. Con Soroban, ahora permite crear p
           "Entendé por qué el dinero pierde valor y cómo DeFi te protege.",
         color: "darkOrange",
         rewardXP: 150,
+        minXp: 100,
         nftImage: "/nft/nft3.svg",
         lessons: [
           {

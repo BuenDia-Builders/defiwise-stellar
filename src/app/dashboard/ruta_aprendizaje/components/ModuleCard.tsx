@@ -18,6 +18,9 @@ interface ModuleCardProps {
   progress: ModuleProgress;
   onStartLesson: (lessonIndex: number) => void;
   onStartQuiz: () => void;
+  walletConnected?: boolean;
+  historicalXP?: bigint | number;
+  lockedReason?: "previous_module" | "wallet_required" | "insufficient_xp";
 }
 
 const colorMap: Record<string, { bg: string; border: string; text: string; badge: string }> = {
@@ -48,6 +51,9 @@ export default function ModuleCard({
   progress,
   onStartLesson,
   onStartQuiz,
+  walletConnected = false,
+  historicalXP = 0,
+  lockedReason,
 }: ModuleCardProps) {
   const colors = colorMap[module.color] ?? colorMap.active;
   const lessonsTotal = module.lessons.length;
@@ -56,6 +62,16 @@ export default function ModuleCard({
   const quizPassed = progress.completed;
 
   if (!unlocked) {
+    let lockMessage = "Completá el módulo anterior para desbloquear";
+    if (lockedReason === "wallet_required" || (module.minXp && !walletConnected)) {
+      lockMessage = `Conectá tu wallet para verificar tu XP on-chain (requiere ${module.minXp} XP)`;
+    } else if (
+      lockedReason === "insufficient_xp" ||
+      (module.minXp && walletConnected && BigInt(historicalXP) < BigInt(module.minXp))
+    ) {
+      lockMessage = `Requiere ${module.minXp} XP históricos on-chain (actual: ${Number(historicalXP)} XP)`;
+    }
+
     return (
       <div className="rounded-2xl border border-borderGrey/50 p-6 opacity-60">
         <div className="flex items-center gap-4">
@@ -63,13 +79,18 @@ export default function ModuleCard({
             <BsLock size={20} className="text-darkGrey" />
           </div>
           <div>
-            <p className="text-sm text-darkGrey font-medium">
-              Módulo {index + 1}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-darkGrey font-medium">
+                Módulo {index + 1}
+              </p>
+              {module.minXp && (
+                <span className="text-xs bg-darkGrey/10 text-darkGrey px-2 py-0.5 rounded-full font-mono">
+                  {module.minXp} XP req.
+                </span>
+              )}
+            </div>
             <h3 className="text-lg font-semibold text-grey">{module.title}</h3>
-            <p className="text-sm text-darkGrey mt-1">
-              Completá el módulo anterior para desbloquear
-            </p>
+            <p className="text-sm text-darkGrey mt-1">{lockMessage}</p>
           </div>
         </div>
       </div>

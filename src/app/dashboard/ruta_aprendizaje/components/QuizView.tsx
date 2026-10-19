@@ -62,7 +62,6 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
       const finalScore = Math.round((finalCorrect / totalQuestions) * 100);
       
       // Update local progress
-      const finalScore = Math.round((correctCount / totalQuestions) * 100);
       progress.completeQuiz(module.id, finalScore, module.rewardXP);
       
       // Submit to blockchain if wallet is connected
@@ -221,9 +220,6 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
                   height={120}
                   className="mx-auto mb-4"
                 />
-                <p className="text-sm text-darkOrange font-semibold">
-                  Ganaste un NFT + {module.rewardXP} XP
-                </p>
                 {connected ? (
                   badgeMinted ? (
                     <p className="text-xs text-active mt-2 flex items-center justify-center gap-1">
@@ -243,6 +239,7 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
                   <p className="text-xs text-darkGrey mt-2">
                     Conectá tu wallet para registrarlo on-chain
                   </p>
+                )}
                 {txHash ? (
                   <>
                     <p className="text-sm text-darkOrange font-semibold">
