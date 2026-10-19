@@ -39,11 +39,23 @@ export interface ApiErrorResponse {
   details?: string;
 }
 
+export class ApiClientError extends Error {
+  status: number;
+  details?: string;
+
+  constructor(status: number, message: string, details?: string) {
+    super(message);
+    this.name = "ApiClientError";
+    this.status = status;
+    this.details = details;
+  }
+}
+
 /**
  * Call the backend API to reward a user for completing a quiz.
  * The backend signs the transaction with the admin key.
  *
- * @throws Error if the request fails or returns an error
+ * @throws ApiClientError if the request fails or returns an error
  */
 export async function rewardQuiz(
   request: RewardQuizRequest
@@ -60,7 +72,8 @@ export async function rewardQuiz(
 
   if (!response.ok) {
     const error = data as ApiErrorResponse;
-    throw new Error(error.message || error.error || "Failed to reward quiz");
+    const msg = error.message || error.error || "Failed to reward quiz";
+    throw new ApiClientError(response.status, msg, error.details);
   }
 
   return data as RewardQuizResponse;
@@ -70,7 +83,7 @@ export async function rewardQuiz(
  * Call the backend API to mint a badge NFT for completing a module.
  * The backend signs the transaction with the admin key.
  *
- * @throws Error if the request fails or returns an error
+ * @throws ApiClientError if the request fails or returns an error
  */
 export async function mintBadge(
   request: MintBadgeRequest
@@ -87,7 +100,8 @@ export async function mintBadge(
 
   if (!response.ok) {
     const error = data as ApiErrorResponse;
-    throw new Error(error.message || error.error || "Failed to mint badge");
+    const msg = error.message || error.error || "Failed to mint badge";
+    throw new ApiClientError(response.status, msg, error.details);
   }
 
   return data as MintBadgeResponse;

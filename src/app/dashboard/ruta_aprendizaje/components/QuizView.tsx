@@ -34,9 +34,7 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
   const [badgeMinted, setBadgeMinted] = useState(false);
 
   const { address, connected } = useStellarWallet();
-  const { checkHasBadge, refresh: refreshProgress } = useStellarProgress();
-  const wallet = useStellarWallet();
-  const stellarProgress = useStellarProgress();
+  const { checkHasBadge, refresh: refreshProgress, rewarding } = useStellarProgress();
 
   const quiz = module.quiz;
   const question = quiz[currentQ];
@@ -62,7 +60,6 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
       const finalScore = Math.round((finalCorrect / totalQuestions) * 100);
       
       // Update local progress
-      const finalScore = Math.round((correctCount / totalQuestions) * 100);
       progress.completeQuiz(module.id, finalScore, module.rewardXP);
       
       // Submit to blockchain if wallet is connected
@@ -71,26 +68,6 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
       }
       
       setFinished(true);
-
-      if (finalScore >= 75) {
-        if (wallet.connected) {
-          stellarProgress
-            .rewardQuiz(
-              module.id,
-              finalCorrect,
-              totalQuestions,
-              module.rewardXP
-            )
-            .then((ok) => {
-              if (!ok) return;
-              toast.success("XP registrado en Stellar Testnet");
-            });
-        } else {
-          toast("Conectá tu wallet para registrar XP en Stellar Testnet", {
-            icon: "💡",
-          });
-        }
-      }
     }
   };
 
@@ -207,7 +184,7 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
                 </strong>{" "}
                 de aciertos.
               </p>
-              {stellarProgress.rewarding && (
+              {rewarding && (
                 <div className="flex items-center justify-center gap-2 text-sm text-darkGrey mb-4">
                   <span className="inline-block w-4 h-4 border-2 border-darkOrange/30 border-t-darkOrange rounded-full animate-spin" />
                   Registrando XP en Stellar Testnet...
@@ -221,28 +198,6 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
                   height={120}
                   className="mx-auto mb-4"
                 />
-                <p className="text-sm text-darkOrange font-semibold">
-                  Ganaste un NFT + {module.rewardXP} XP
-                </p>
-                {connected ? (
-                  badgeMinted ? (
-                    <p className="text-xs text-active mt-2 flex items-center justify-center gap-1">
-                      <BsCheckCircleFill size={12} />
-                      Badge registrado on-chain en Stellar Testnet
-                    </p>
-                  ) : submitting ? (
-                    <p className="text-xs text-darkGrey mt-2">
-                      Registrando on-chain...
-                    </p>
-                  ) : (
-                    <p className="text-xs text-darkGrey mt-2">
-                      Badge guardado localmente (requiere reconexión on-chain)
-                    </p>
-                  )
-                ) : (
-                  <p className="text-xs text-darkGrey mt-2">
-                    Conectá tu wallet para registrarlo on-chain
-                  </p>
                 {txHash ? (
                   <>
                     <p className="text-sm text-darkOrange font-semibold">
@@ -253,6 +208,16 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
                     </p>
                     <p className="text-[10px] text-grey mt-2 break-all">
                       Tx: {txHash}
+                    </p>
+                  </>
+                ) : badgeMinted ? (
+                  <>
+                    <p className="text-sm text-darkOrange font-semibold">
+                      Ganaste un NFT + {module.rewardXP} XP
+                    </p>
+                    <p className="text-xs text-active mt-2 flex items-center justify-center gap-1">
+                      <BsCheckCircleFill size={12} />
+                      Badge registrado on-chain en Stellar Testnet
                     </p>
                   </>
                 ) : (

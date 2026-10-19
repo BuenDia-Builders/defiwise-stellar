@@ -5,6 +5,7 @@ import Image from "next/image";
 import { courses, Course } from "@/data/courses";
 import { useProgress } from "@/hooks/useProgress";
 import DashboardLayout from "@/components/DashboardLayout";
+import PendingRewardsBanner from "@/components/PendingRewardsBanner";
 import ModuleCard from "@/app/dashboard/ruta_aprendizaje/components/ModuleCard";
 import LessonView from "@/app/dashboard/ruta_aprendizaje/components/LessonView";
 import QuizView from "@/app/dashboard/ruta_aprendizaje/components/QuizView";
@@ -206,6 +207,7 @@ export default function Dashboard() {
     return (
       <DashboardLayout>
         <section>
+          <PendingRewardsBanner />
           <button
             onClick={goToCatalog}
             className="flex items-center gap-2 text-darkGrey hover:text-darkOrange transition-colors mb-6"
@@ -257,6 +259,7 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       <section>
+        <PendingRewardsBanner />
         <h2 className="text-2xl font-bold text-darkGreen mb-2">
           Rutas de aprendizaje
         </h2>
