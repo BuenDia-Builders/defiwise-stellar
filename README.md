@@ -10,9 +10,18 @@ DeFiWise lets users learn DeFi hands-on through learning paths with modules, les
 
 - **Frontend:** Next.js 14, Tailwind CSS, DaisyUI
 - **Backend:** Next.js API Routes (admin-signed transactions)
-- **Wallet:** Freighter (Stellar)
+- **Wallet:** Stellar Wallets Kit / SEP-43 (Freighter, xBull, Lobstr, Albedo, Hana)
 - **Smart Contracts:** Soroban (Rust) — XP Token + Badge NFT
 - **Network:** Stellar Testnet
+
+### Supported Wallets (Stellar Wallets Kit)
+
+DeFiWise utilizes [Stellar Wallets Kit](https://stellarwalletskit.dev/) (SEP-43) to allow learners to connect with their preferred wallet:
+- **Freighter** (browser extension)
+- **xBull** (extension & mobile)
+- **Lobstr** (mobile & extension)
+- **Albedo** (web-based authentication)
+- **Hana** (multi-chain wallet)
 
 ## Deployed Contracts (Testnet)
 
