@@ -384,6 +384,7 @@ DeFi te da herramientas para escapar de esto:
 - **Stablecoins** como USDC te permiten mantener valor en dólares digitales.
 - **Protocolos de lending** te pagan interés real por prestar tus activos.
 - **Yield farming** busca los mejores rendimientos de forma automática.
+- **Stablebonds soberanos (Etherfuse en Stellar)** — Bonos del tesoro tokenizados (CETES, USTRY, TESOURO) que acumulan rendimiento diario en blockchain para preservar tu poder de compra.
 
 No es magia — son contratos inteligentes que crean mercados de capital más eficientes, sin un banco que se quede con la diferencia.`,
           },

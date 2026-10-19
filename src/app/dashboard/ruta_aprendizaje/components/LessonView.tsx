@@ -3,6 +3,7 @@
 import { Module } from "@/data/courses";
 import { useProgress } from "@/hooks/useProgress";
 import { BsArrowLeft, BsArrowRight, BsCheckCircleFill } from "react-icons/bs";
+import EtherfuseStablebondYields from "@/components/EtherfuseStablebondYields";
 
 interface LessonViewProps {
   module: Module;
@@ -116,6 +117,10 @@ export default function LessonView({
       {/* Content */}
       <div className="bg-white rounded-2xl border border-borderGrey/30 p-8 mb-8">
         {renderContent(lesson.content)}
+
+        {module.id === "mod-3" && lesson.id === "les-3-1" && (
+          <EtherfuseStablebondYields />
+        )}
       </div>
 
       {/* Navigation */}

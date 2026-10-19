@@ -108,6 +108,9 @@ export function useStellarProgress() {
       total: number,
       maxXp: number
     ): Promise<boolean> => {
+      void correct;
+      void total;
+      void maxXp;
       if (!connected || !address) return false;
 
       const alreadyDone = await checkChallengeCompleted(challengeId);
