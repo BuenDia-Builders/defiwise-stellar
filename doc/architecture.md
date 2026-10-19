@@ -585,7 +585,7 @@ DeFindex and Orbit are better candidates for a post-hackathon roadmap when there
 |---|---|
 | Admin signer | Where does `ADMIN_SECRET_KEY` live on Vercel/deployment? Needs env var configuration and rotation plan before mainnet. |
 | API route security | What prevents someone from calling `/api/reward` directly with a fake score? Consider signing the quiz result with a server-side HMAC or verifying on-chain that the user is enrolled. |
-| Offline / no-wallet | Should students who complete a quiz without a wallet be able to claim rewards retroactively when they connect? Current contract design supports it (challenge_id is deterministic). |
+| Offline / no-wallet | Resolved (issue #41): on wallet connect, `usePendingRewards` compares modules passed in localStorage with `is_completed(${moduleId}-quiz)` / `has_badge(moduleId)` and `PendingRewardsBanner` offers to claim the missing XP/badges through `/api/reward-quiz` and `/api/mint-badge`. A 409 counts as already claimed. Logic in `src/lib/pendingRewards.ts`, covered by `pendingRewards.test.ts`. |
 | Second course (issue #22) | What topic? The architecture supports N courses in `courses.ts` — the constraint is content, not code. |
 | Mobile | No mobile consideration today. Privy (if integrated) natively supports mobile wallets, which opens this path. |
 | SCF Build Award | After PULSO, DeFiWise is a strong candidate for an SCF Build Award under the Integration Track. The integration list used here is the same one SCF evaluates against. |

@@ -40,10 +40,23 @@ export interface ApiErrorResponse {
 }
 
 /**
+ * Error thrown by the API helpers. `status` is the HTTP status, so callers can
+ * tell "already rewarded / already minted" (409) apart from real failures.
+ */
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+/**
  * Call the backend API to reward a user for completing a quiz.
  * The backend signs the transaction with the admin key.
  *
- * @throws Error if the request fails or returns an error
+ * @throws ApiError (with the HTTP status) if the request fails or returns an error
  */
 export async function rewardQuiz(
   request: RewardQuizRequest
@@ -60,7 +73,7 @@ export async function rewardQuiz(
 
   if (!response.ok) {
     const error = data as ApiErrorResponse;
-    throw new Error(error.message || error.error || "Failed to reward quiz");
+    throw new ApiError(error.message || error.error || "Failed to reward quiz", response.status);
   }
 
   return data as RewardQuizResponse;
@@ -70,7 +83,7 @@ export async function rewardQuiz(
  * Call the backend API to mint a badge NFT for completing a module.
  * The backend signs the transaction with the admin key.
  *
- * @throws Error if the request fails or returns an error
+ * @throws ApiError (with the HTTP status) if the request fails or returns an error
  */
 export async function mintBadge(
   request: MintBadgeRequest
@@ -87,7 +100,7 @@ export async function mintBadge(
 
   if (!response.ok) {
     const error = data as ApiErrorResponse;
-    throw new Error(error.message || error.error || "Failed to mint badge");
+    throw new ApiError(error.message || error.error || "Failed to mint badge", response.status);
   }
 
   return data as MintBadgeResponse;
