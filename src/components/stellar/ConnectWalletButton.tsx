@@ -27,7 +27,8 @@ export function ConnectWalletButton() {
     <button
       onClick={connect}
       disabled={loading}
-      className="btn border-0 text-white bg-gradient-to-b from-darkOrange to-lightOrange flex items-center gap-2"
+      title="Conectar con Freighter, xBull, Lobstr, Albedo o Hana (Stellar Wallets Kit)"
+      className="btn border-0 text-white bg-gradient-to-b from-darkOrange to-lightOrange flex items-center gap-2 hover:opacity-95 shadow-xs"
     >
       <BsWallet2 />
       {loading ? "Conectando..." : "Conectar Wallet"}

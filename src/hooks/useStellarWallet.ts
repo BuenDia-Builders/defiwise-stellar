@@ -1,34 +1,46 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useState } from "react";
-import {
-  isConnected,
-  getAddress,
-  requestAccess,
-  signTransaction,
-} from "@stellar/freighter-api";
 import { useHydrated } from "@/lib/hydration";
+import { getStellarWalletsKit } from "@/lib/stellar-wallets-kit";
+
+export interface SignTransactionOpts {
+  networkPassphrase?: string;
+  address?: string;
+  path?: string;
+}
 
 export function useStellarWallet() {
   const [address, setAddress] = useState<string | null>(null);
-  const [connected, setConnected] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [connected, setConnected] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const isHydrated = useHydrated();
 
   const checkConnection = useCallback(async () => {
+    if (!isHydrated || typeof window === "undefined") return;
+
     try {
-      const result = await isConnected();
-      if (result.isConnected) {
-        const addr = await getAddress();
-        if (addr.address) {
-          setAddress(addr.address);
+      const stored = localStorage.getItem("defiwise:wallet_address");
+      if (stored) {
+        setAddress(stored);
+        setConnected(true);
+        return;
+      }
+
+      const kit = await getStellarWalletsKit();
+      if (kit) {
+        const res = await kit.getAddress().catch(() => null);
+        if (res?.address) {
+          setAddress(res.address);
           setConnected(true);
+          localStorage.setItem("defiwise:wallet_address", res.address);
         }
       }
     } catch {
-      // Freighter not installed
+      // Disconnected or no active session
     }
-  }, []);
+  }, [isHydrated]);
 
   useEffect(() => {
     if (isHydrated) {
@@ -39,28 +51,58 @@ export function useStellarWallet() {
   const connect = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await isConnected();
-      if (!result.isConnected) {
-        window.open("https://www.freighter.app/", "_blank");
+      const kit = await getStellarWalletsKit();
+      if (!kit) {
+        console.warn("StellarWalletsKit not available in current environment");
         setLoading(false);
         return;
       }
-      await requestAccess();
-      const addr = await getAddress();
-      if (addr.address) {
-        setAddress(addr.address);
+
+      // authModal opens the multi-wallet picker (Freighter, xBull, Albedo, Lobstr, Hana)
+      const res = await kit.authModal();
+      if (res?.address) {
+        setAddress(res.address);
         setConnected(true);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("defiwise:wallet_address", res.address);
+        }
       }
-    } catch (err) {
-      console.error("Error connecting to Freighter:", err);
+    } catch (err: any) {
+      // Code -1 is user cancellation / closed modal
+      if (err?.code !== -1) {
+        console.error("Error connecting via StellarWalletsKit:", err);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
+    try {
+      const kit = await getStellarWalletsKit();
+      if (kit) {
+        await kit.disconnect().catch(() => {});
+      }
+    } catch {
+      // Ignore cleanup error
+    }
     setAddress(null);
     setConnected(false);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("defiwise:wallet_address");
+    }
   }, []);
+
+  const signTransaction = useCallback(
+    async (xdr: string, opts?: SignTransactionOpts) => {
+      const kit = await getStellarWalletsKit();
+      if (!kit) {
+        throw new Error("StellarWalletsKit not initialized");
+      }
+      return kit.signTransaction(xdr, opts);
+    },
+    []
+  );
 
   const truncatedAddress = address
     ? `${address.slice(0, 4)}...${address.slice(-4)}`
