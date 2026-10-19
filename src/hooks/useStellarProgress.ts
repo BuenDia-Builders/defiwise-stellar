@@ -9,12 +9,38 @@ import {
   isChallengeCompleted,
   hasBadge,
 } from "@/lib/stellar";
+import {
+  rewardQuiz as apiRewardQuiz,
+  mintBadge as apiMintBadge,
+  ApiClientError,
+  RewardQuizResponse,
+  MintBadgeResponse,
+} from "@/lib/api-client";
+import toast from "react-hot-toast";
 
 export interface OnChainStatus {
   xpBalance: bigint;
   historicalXP: bigint;
   loading: boolean;
   error: string | null;
+  lastTxHash?: string | null;
+  lastXpRewarded?: number | null;
+}
+
+export interface RewardQuizOptions {
+  moduleId?: string;
+  moduleTitle?: string;
+  answers?: number[] | string[] | Record<string, number | string>;
+}
+
+export interface RewardQuizResult {
+  success: boolean;
+  hash?: string;
+  xpRewarded?: number;
+  badgeHash?: string;
+  badgeTokenId?: number;
+  alreadyCompleted?: boolean;
+  error?: string;
 }
 
 export function useStellarProgress() {
@@ -25,6 +51,8 @@ export function useStellarProgress() {
     historicalXP: BigInt(0),
     loading: false,
     error: null,
+    lastTxHash: null,
+    lastXpRewarded: null,
   });
 
   const fetchOnChainProgress = useCallback(async () => {
@@ -36,6 +64,8 @@ export function useStellarProgress() {
         historicalXP: BigInt(0),
         loading: false,
         error: null,
+        lastTxHash: null,
+        lastXpRewarded: null,
       });
       return;
     }
@@ -49,12 +79,13 @@ export function useStellarProgress() {
         getXPBalance(address),
         getHistoricalXP(address),
       ]);
-      setStatus({
+      setStatus((prev) => ({
+        ...prev,
         xpBalance: balance,
         historicalXP: historical,
         loading: false,
         error: null,
-      });
+      }));
     } catch (err) {
       setStatus((prev) => ({
         ...prev,
@@ -101,38 +132,132 @@ export function useStellarProgress() {
   const [rewarding, setRewarding] = useState(false);
   const [rewardError, setRewardError] = useState<string | null>(null);
 
+  /**
+   * Replaces mock stub (Issue #35) by calling actual backend API routes
+   * (/api/reward-quiz and /api/mint-badge), obtaining real tx hashes,
+   * refreshing on-chain balances, and handling 409/429 gracefully with toasts.
+   */
   const rewardQuiz = useCallback(
     async (
       challengeId: string,
       correct: number,
       total: number,
-      maxXp: number
-    ): Promise<boolean> => {
-      if (!connected || !address) return false;
+      maxXp: number,
+      options?: RewardQuizOptions
+    ): Promise<RewardQuizResult> => {
+      if (!connected || !address) {
+        toast("Conectá tu wallet para registrar XP en Stellar Testnet", {
+          icon: "💡",
+        });
+        return { success: false, error: "Wallet not connected" };
+      }
 
+      // Check on-chain early deduplication
       const alreadyDone = await checkChallengeCompleted(challengeId);
-      if (alreadyDone) return false;
+      if (alreadyDone) {
+        toast("Este desafío ya fue registrado on-chain anteriormente.", {
+          icon: "ℹ️",
+        });
+        return { success: false, alreadyCompleted: true };
+      }
 
       setRewarding(true);
       setRewardError(null);
 
       try {
-        // TODO(#18): Replace with actual backend signer call
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        // 1. Submit quiz reward to backend admin signer
+        const xpResult: RewardQuizResponse = await apiRewardQuiz({
+          userPublicKey: address,
+          challengeId,
+          correct,
+          total,
+          maxXp,
+          answers: options?.answers || [],
+        });
+
+        setStatus((prev) => ({
+          ...prev,
+          lastTxHash: xpResult.hash,
+          lastXpRewarded: xpResult.xpRewarded,
+        }));
+
+        // 2. If passing score (>= 75%), mint module badge NFT
+        let badgeResult: MintBadgeResponse | undefined;
+        const score = total > 0 ? Math.round((correct / total) * 100) : 0;
+        const targetModuleId =
+          options?.moduleId || challengeId.replace(/-quiz$/, "");
+
+        if (score >= 75 && targetModuleId) {
+          const hasBadgeAlready = await checkHasBadge(targetModuleId);
+          if (!hasBadgeAlready) {
+            try {
+              badgeResult = await apiMintBadge({
+                userPublicKey: address,
+                moduleId: targetModuleId,
+                moduleTitle: options?.moduleTitle || targetModuleId,
+                xpEarned: xpResult.xpRewarded,
+                quizScore: score,
+              });
+              toast.success(
+                `🏆 ¡Badge NFT registrado on-chain! +${xpResult.xpRewarded} XP`
+              );
+            } catch (badgeErr) {
+              console.warn("Badge mint failed after quiz reward:", badgeErr);
+              toast.success(`+${xpResult.xpRewarded} XP registrados on-chain`);
+            }
+          } else {
+            toast.success(`+${xpResult.xpRewarded} XP registrados on-chain`);
+          }
+        } else {
+          toast.success(`+${xpResult.xpRewarded} XP registrados on-chain`);
+        }
+
+        // 3. Refresh on-chain balance and badges
         await fetchOnChainProgress();
-        setRewarding(false);
-        return true;
+
+        return {
+          success: true,
+          hash: xpResult.hash,
+          xpRewarded: xpResult.xpRewarded,
+          badgeHash: badgeResult?.hash,
+          badgeTokenId: badgeResult?.tokenId,
+        };
       } catch (err) {
-        const msg =
-          err instanceof Error
-            ? err.message
-            : "Error al reclamar XP on-chain";
-        setRewardError(msg);
+        let errorMsg = "Error al reclamar XP on-chain";
+
+        if (err instanceof ApiClientError) {
+          if (err.status === 409) {
+            errorMsg =
+              "El desafío o badge ya fue registrado previamente en la blockchain.";
+            toast.error(errorMsg);
+          } else if (err.status === 429) {
+            errorMsg =
+              "Límite de peticiones alcanzado. Esperá un minuto antes de reintentar.";
+            toast.error(errorMsg);
+          } else {
+            errorMsg = err.message;
+            toast.error(errorMsg);
+          }
+        } else if (err instanceof Error) {
+          errorMsg = err.message;
+          toast.error(errorMsg);
+        } else {
+          toast.error(errorMsg);
+        }
+
+        setRewardError(errorMsg);
+        return { success: false, error: errorMsg };
+      } finally {
         setRewarding(false);
-        return false;
       }
     },
-    [address, connected, checkChallengeCompleted, fetchOnChainProgress]
+    [
+      address,
+      connected,
+      checkChallengeCompleted,
+      checkHasBadge,
+      fetchOnChainProgress,
+    ]
   );
 
   return {
