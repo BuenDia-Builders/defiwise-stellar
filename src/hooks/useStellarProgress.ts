@@ -9,12 +9,24 @@ import {
   isChallengeCompleted,
   hasBadge,
 } from "@/lib/stellar";
+import {
+  rewardQuiz as apiRewardQuiz,
+  mintBadge as apiMintBadge,
+} from "@/lib/api-client";
+import toast from "react-hot-toast";
 
 export interface OnChainStatus {
   xpBalance: bigint;
   historicalXP: bigint;
   loading: boolean;
   error: string | null;
+}
+
+export interface RewardResult {
+  hash: string;
+  xpRewarded: number;
+  badgeHash?: string;
+  tokenId?: number;
 }
 
 export function useStellarProgress() {
@@ -100,36 +112,119 @@ export function useStellarProgress() {
 
   const [rewarding, setRewarding] = useState(false);
   const [rewardError, setRewardError] = useState<string | null>(null);
+  const [lastRewardResult, setLastRewardResult] = useState<RewardResult | null>(null);
 
+  /**
+   * Call the backend to award XP for a completed quiz, and mint a badge
+   * when the score meets the passing threshold (≥ 75 %).
+   *
+   * Returns a RewardResult on success, or null when the user has no wallet,
+   * the challenge was already claimed (409), or a rate-limit (429) was hit.
+   * In the 409 / 429 cases a toast is shown but local progress is preserved.
+   */
   const rewardQuiz = useCallback(
     async (
       challengeId: string,
       correct: number,
       total: number,
-      maxXp: number
-    ): Promise<boolean> => {
-      if (!connected || !address) return false;
+      maxXp: number,
+      moduleTitle?: string
+    ): Promise<RewardResult | null> => {
+      if (!connected || !address) return null;
 
       const alreadyDone = await checkChallengeCompleted(challengeId);
-      if (alreadyDone) return false;
+      if (alreadyDone) {
+        toast("Este quiz ya fue registrado on-chain.", { icon: "ℹ️" });
+        return null;
+      }
 
       setRewarding(true);
       setRewardError(null);
 
       try {
-        // TODO(#18): Replace with actual backend signer call
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        // Step 1 — Reward XP via the backend signer
+        const xpResult = await apiRewardQuiz({
+          userPublicKey: address,
+          challengeId,
+          correct,
+          total,
+          maxXp,
+        });
+
+        const result: RewardResult = {
+          hash: xpResult.hash,
+          xpRewarded: xpResult.xpRewarded,
+        };
+
+        // Step 2 — Mint badge when score ≥ 75 % and moduleTitle is provided
+        const score = Math.round((correct / total) * 100);
+        if (score >= 75 && moduleTitle) {
+          // moduleId is the part of challengeId before "-quiz"
+          const moduleId = challengeId.endsWith("-quiz")
+            ? challengeId.slice(0, -5)
+            : challengeId;
+
+          try {
+            const badgeResult = await apiMintBadge({
+              userPublicKey: address,
+              moduleId,
+              moduleTitle,
+              xpEarned: xpResult.xpRewarded,
+              quizScore: score,
+            });
+            result.badgeHash = badgeResult.hash;
+            result.tokenId = badgeResult.tokenId;
+          } catch (badgeErr) {
+            const msg =
+              badgeErr instanceof Error ? badgeErr.message : "";
+            // Badge already minted is not a fatal error — XP was still awarded
+            if (msg.includes("already") || msg.includes("409")) {
+              toast("Badge ya registrado para este módulo.", { icon: "ℹ️" });
+            } else {
+              // Surface non-duplicate badge errors as warnings; XP was still
+              // recorded so we don't fail the whole flow.
+              toast.error(
+                "XP registrado, pero no se pudo acuñar el badge. Intenta más tarde."
+              );
+            }
+          }
+        }
+
+        setLastRewardResult(result);
+
+        // Refresh on-chain balances to reflect the new XP
         await fetchOnChainProgress();
-        setRewarding(false);
-        return true;
+
+        return result;
       } catch (err) {
         const msg =
-          err instanceof Error
-            ? err.message
-            : "Error al reclamar XP on-chain";
+          err instanceof Error ? err.message : "Error al reclamar XP on-chain";
+
+        // 409 — already completed on-chain
+        if (msg.includes("already completed") || msg.includes("409")) {
+          toast("Este quiz ya fue registrado on-chain.", { icon: "ℹ️" });
+          setRewarding(false);
+          return null;
+        }
+
+        // 429 — rate limited
+        if (msg.includes("Rate limit") || msg.includes("429")) {
+          toast.error(
+            "Demasiadas solicitudes. Esperá unos segundos e intentá de nuevo."
+          );
+          setRewarding(false);
+          return null;
+        }
+
+        // Generic error — surface to UI but don't break local progress
         setRewardError(msg);
+        toast.error(
+          "No se pudo registrar on-chain. Tu progreso se guardó localmente."
+        );
         setRewarding(false);
-        return false;
+        return null;
+      } finally {
+        setRewarding(false);
       }
     },
     [address, connected, checkChallengeCompleted, fetchOnChainProgress]
@@ -141,6 +236,7 @@ export function useStellarProgress() {
     address,
     rewarding,
     rewardError,
+    lastRewardResult,
     fetchOnChainProgress,
     refresh: fetchOnChainProgress,
     checkChallengeCompleted,
