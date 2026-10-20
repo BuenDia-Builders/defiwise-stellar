@@ -2,31 +2,43 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  connect as kitConnect,
+  disconnect as kitDisconnect,
+  getPublicKey,
   isConnected,
-  getAddress,
-  requestAccess,
   signTransaction,
-} from "@stellar/freighter-api";
+} from "@stellar/wallets-kit";
 import { useHydrated } from "@/lib/hydration";
+
+export interface WalletOption {
+  id: string;
+  name: string;
+}
+
+export const SUPPORTED_WALLETS: WalletOption[] = [
+  { id: "freighter", name: "Freighter" },
+  { id: "xbull", name: "xBull" },
+];
 
 export function useStellarWallet() {
   const [address, setAddress] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
   const isHydrated = useHydrated();
 
   const checkConnection = useCallback(async () => {
     try {
       const result = await isConnected();
       if (result.isConnected) {
-        const addr = await getAddress();
-        if (addr.address) {
-          setAddress(addr.address);
+        const addr = await getPublicKey();
+        if (addr) {
+          setAddress(addr);
           setConnected(true);
         }
       }
     } catch {
-      // Freighter not installed
+      // wallet not installed / not connected
     }
   }, []);
 
@@ -36,30 +48,33 @@ export function useStellarWallet() {
     }
   }, [isHydrated, checkConnection]);
 
-  const connect = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await isConnected();
-      if (!result.isConnected) {
-        window.open("https://www.freighter.app/", "_blank");
-        setLoading(false);
-        return;
+  const connect = useCallback(
+    async (walletId?: string) => {
+      setLoading(true);
+      try {
+        if (walletId) {
+          setSelectedWallet(walletId);
+        }
+        const wallet = selectedWallet || walletId || "freighter";
+        await kitConnect({ wallet });
+        const addr = await getPublicKey();
+        if (addr) {
+          setAddress(addr);
+          setConnected(true);
+        }
+      } catch (err) {
+        console.error("Error connecting to wallet:", err);
       }
-      await requestAccess();
-      const addr = await getAddress();
-      if (addr.address) {
-        setAddress(addr.address);
-        setConnected(true);
-      }
-    } catch (err) {
-      console.error("Error connecting to Freighter:", err);
-    }
-    setLoading(false);
-  }, []);
+      setLoading(false);
+    },
+    [selectedWallet]
+  );
 
   const disconnect = useCallback(() => {
+    kitDisconnect();
     setAddress(null);
     setConnected(false);
+    setSelectedWallet(null);
   }, []);
 
   const truncatedAddress = address
@@ -71,6 +86,7 @@ export function useStellarWallet() {
     truncatedAddress,
     connected,
     loading,
+    selectedWallet,
     connect,
     disconnect,
     signTransaction,
