@@ -6,9 +6,7 @@
 export interface RewardQuizRequest {
   userPublicKey: string;
   challengeId: string;
-  correct: number;
-  total: number;
-  maxXp: number;
+  answers: number[];
 }
 
 export interface RewardQuizResponse {

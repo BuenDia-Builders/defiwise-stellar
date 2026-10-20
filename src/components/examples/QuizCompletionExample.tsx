@@ -26,10 +26,8 @@ export default function QuizCompletionExample() {
       // Call the backend API to reward the user
       const result = await rewardQuiz({
         userPublicKey,
-        challengeId: "defi-basics-quiz-01", // Unique ID for this quiz
-        correct: 8,
-        total: 10,
-        maxXp: 100, // Maximum XP for perfect score
+        challengeId: "mod-1-quiz",
+        answers: [1, 2, 2, 1],
       });
 
       // Show success message

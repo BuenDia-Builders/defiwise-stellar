@@ -2,6 +2,8 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import QuizView from "./QuizView";
+import type { Module } from "@/data/courses";
+import { useProgress } from "@/hooks/useProgress";
 import React from "react";
 
 afterEach(() => {
@@ -11,13 +13,13 @@ afterEach(() => {
 // Mock next/image to avoid issues in Node test environment
 vi.mock("next/image", () => ({
   __esModule: true,
-  default: (props: any) => {
+  default: (props: React.ComponentProps<"img">) => {
     // eslint-disable-next-line @next/next/no-img-element
     return <img {...props} src={props.src} alt={props.alt || ""} />;
   },
 }));
 
-const mockModule = {
+const mockModule: Module = {
   id: "mod-1",
   title: "Test Module",
   description: "Test Description",
@@ -37,7 +39,10 @@ const mockModule = {
   ],
 };
 
-const createMockProgress = (quizScore: number | null, completed: boolean) => ({
+const createMockProgress = (
+  quizScore: number | null,
+  completed: boolean
+): ReturnType<typeof useProgress> => ({
   progress: {},
   getModuleProgress: () => ({
     completed,
@@ -62,7 +67,7 @@ describe("QuizView", () => {
       <QuizView
         module={mockModule}
         onBack={onBack}
-        progress={mockProgress as any}
+        progress={mockProgress}
       />
     );
 
@@ -82,7 +87,7 @@ describe("QuizView", () => {
     fireEvent.click(nextButton);
 
     // Verify that completeQuiz was called on progress object
-    expect(mockProgress.completeQuiz).toHaveBeenCalledWith("mod-1", 200, 50);
+    expect(mockProgress.completeQuiz).toHaveBeenCalledWith("mod-1", 100, 50);
   });
 
   it("does NOT show on-chain confirmation or false Stellar Testnet claims during the current local-only flow", () => {
@@ -93,7 +98,7 @@ describe("QuizView", () => {
       <QuizView
         module={mockModule}
         onBack={onBack}
-        progress={mockProgress as any}
+        progress={mockProgress}
       />
     );
     
@@ -130,7 +135,7 @@ describe("QuizView", () => {
       <QuizView
         module={mockModule}
         onBack={onBack}
-        progress={mockProgress as any}
+        progress={mockProgress}
         txHash={mockTxHash}
       />
     );
