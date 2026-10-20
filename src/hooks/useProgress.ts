@@ -107,8 +107,32 @@ export function useProgress() {
   );
 
   const isModuleUnlocked = useCallback(
-    (moduleIndex: number, modules: { id: string }[]): boolean => {
+    (
+      moduleIndex: number,
+      modules: { id: string; minXp?: number }[],
+      /**
+       * On-chain historical XP from the XP Token contract. Required when any
+       * module in the list declares a `minXp` gate.
+       *
+       * INVARIANT: always pass `historicalXP` from `useStellarProgress`, never
+       * the local `totalXP`. The historical balance is append-only and cannot
+       * be gamed by spending or transferring tokens.
+       */
+      historicalXP?: bigint
+    ): boolean => {
       if (moduleIndex === 0) return true;
+      const mod = modules[moduleIndex];
+
+      // On-chain XP gate: if the module declares a minXp threshold, the wallet
+      // must be connected (historicalXP provided) AND the historical balance
+      // must meet the threshold. Without a wallet we cannot verify on-chain
+      // state, so the module stays locked rather than falsely unlocked.
+      if (mod.minXp !== undefined && mod.minXp > 0) {
+        if (historicalXP === undefined || historicalXP === null) return false;
+        if (historicalXP < BigInt(mod.minXp)) return false;
+      }
+
+      // Sequential gate: previous module must be locally completed.
       const prevModuleId = modules[moduleIndex - 1].id;
       const prevProgress = progress[prevModuleId];
       return prevProgress?.completed ?? false;

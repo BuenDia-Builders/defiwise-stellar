@@ -26,6 +26,14 @@ export interface Module {
   quiz: Question[];
   rewardXP: number;
   nftImage: string; // path to the NFT image earned on completion
+  /**
+   * Minimum on-chain historical XP required to unlock this module.
+   * Gating is based exclusively on `historical_balance` from the XP Token
+   * contract — an append-only counter that never decreases, so burning tokens
+   * cannot be used to replay modules. Modules without this field are unlocked
+   * by the standard sequential rule (previous module completed locally).
+   */
+  minXp?: number;
 }
 
 export interface Course {
@@ -354,6 +362,7 @@ Stellar ya era excelente para pagos rápidos. Con Soroban, ahora permite crear p
         color: "darkOrange",
         rewardXP: 150,
         nftImage: "/nft/nft3.svg",
+        minXp: 200,
         lessons: [
           {
             id: "les-3-1",
@@ -660,6 +669,7 @@ DeFiWise usa **Stellar Testnet** para que practiques sin riesgo.`,
         color: "pink",
         rewardXP: 150,
         nftImage: "/nft/nft5.svg",
+        minXp: 50,
         lessons: [
           {
             id: "stellar-les-2-1",
@@ -797,6 +807,7 @@ Los contratos emiten eventos (ej: \`RewardIssued\`, \`BadgeMinted\`) que las app
         color: "darkOrange",
         rewardXP: 150,
         nftImage: "/nft/nft6.svg",
+        minXp: 200,
         lessons: [
           {
             id: "stellar-les-3-1",

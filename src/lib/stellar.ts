@@ -197,6 +197,33 @@ export async function isChallengeCompleted(
 }
 
 /**
+ * Check whether a user's on-chain historical XP meets a minimum threshold.
+ *
+ * INVARIANT: gating is always based on `historical_balance`, never on the
+ * current spendable `balance`. The historical balance is append-only and can
+ * never decrease, so token burns or transfers cannot be used to replay modules
+ * or game the unlock system.
+ *
+ * This is a read-only simulation — no signing or XLM fee required.
+ */
+export async function checkXPRequirement(
+  userPublicKey: string,
+  minXp: number
+): Promise<boolean> {
+  if (!userPublicKey || userPublicKey.trim() === "") return false;
+  if (minXp <= 0) return true; // no threshold → always pass
+  const userAddress = new StellarSdk.Address(userPublicKey).toScVal();
+  const minXpScVal = StellarSdk.nativeToScVal(BigInt(minXp), { type: "i128" });
+  const result = await queryContract(
+    CONTRACTS.XP_TOKEN,
+    "meets_requirement",
+    [userAddress, minXpScVal]
+  );
+  if (!result) return false;
+  return StellarSdk.scValToNative(result) as boolean;
+}
+
+/**
  * Check if user has a badge for a module
  */
 export async function hasBadge(
