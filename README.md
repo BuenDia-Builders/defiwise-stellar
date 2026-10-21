@@ -10,7 +10,7 @@ DeFiWise lets users learn DeFi hands-on through learning paths with modules, les
 
 - **Frontend:** Next.js 14, Tailwind CSS, DaisyUI
 - **Backend:** Next.js API Routes (admin-signed transactions)
-- **Wallet:** Freighter (Stellar)
+- **Wallet:** Stellar Wallets Kit (SEP-43) — Freighter, xBull and more
 - **Smart Contracts:** Soroban (Rust) — XP Token + Badge NFT
 - **Network:** Stellar Testnet
 
