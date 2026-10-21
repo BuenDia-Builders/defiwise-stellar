@@ -7,6 +7,7 @@ import { useStellarProgress } from "@/hooks/useStellarProgress";
 import { courses } from "@/data/courses";
 import { BsPatchCheckFill, BsTrophy, BsStarFill } from "react-icons/bs";
 import { OnChainStatus } from "@/components/stellar/OnChainStatus";
+import { PendingRewardsBanner } from "@/components/stellar/PendingRewardsBanner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { computeXPPercent } from "@/lib/stellar";
 
@@ -52,6 +53,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       
       <div className="flex-1 max-w-[750px] md:p-6">
         <ErrorBoundary>
+          <PendingRewardsBanner />
           {children}
         </ErrorBoundary>
       </div>
