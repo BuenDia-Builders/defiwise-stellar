@@ -1,6 +1,6 @@
 "use client";
 
-import { useStellarWallet } from "@/hooks/useStellarWallet";
+import { useStellarWallet, SUPPORTED_WALLETS } from "@/hooks/useStellarWallet";
 import { BsWallet2 } from "react-icons/bs";
 
 export function ConnectWalletButton() {
@@ -24,13 +24,20 @@ export function ConnectWalletButton() {
   }
 
   return (
-    <button
-      onClick={connect}
-      disabled={loading}
-      className="btn border-0 text-white bg-gradient-to-b from-darkOrange to-lightOrange flex items-center gap-2"
-    >
-      <BsWallet2 />
-      {loading ? "Conectando..." : "Conectar Wallet"}
-    </button>
+    <div className="flex flex-col gap-2">
+      {SUPPORTED_WALLETS.map((wallet) => (
+        <button
+          key={wallet.id}
+          onClick={() => connect(wallet.id)}
+          disabled={loading}
+          className="btn border-0 text-white bg-gradient-to-b from-darkOrange to-lightOrange flex items-center justify-between gap-2 px-4"
+        >
+          <span>
+            <BsWallet2 /> Conectar {wallet.name}
+          </span>
+          {loading ? "Conectando..." : null}
+        </button>
+      ))}
+    </div>
   );
 }

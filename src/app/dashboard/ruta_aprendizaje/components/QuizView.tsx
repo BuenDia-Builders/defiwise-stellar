@@ -6,7 +6,6 @@ import { Module } from "@/data/courses";
 import { useProgress } from "@/hooks/useProgress";
 import { useStellarWallet } from "@/hooks/useStellarWallet";
 import { useStellarProgress } from "@/hooks/useStellarProgress";
-import { rewardQuiz, mintBadge } from "@/lib/api-client";
 import toast from "react-hot-toast";
 import {
   BsArrowLeft,
@@ -21,21 +20,16 @@ interface QuizViewProps {
   module: Module;
   onBack: () => void;
   progress: ReturnType<typeof useProgress>;
-  txHash?: string;
 }
 
-export default function QuizView({ module, onBack, progress, txHash }: QuizViewProps) {
+export default function QuizView({ module, onBack, progress }: QuizViewProps) {
   const [currentQ, setCurrentQ] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
   const [answers, setAnswers] = useState<number[]>([]);
   const [finished, setFinished] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [badgeMinted, setBadgeMinted] = useState(false);
 
-  const { address, connected } = useStellarWallet();
-  const { checkHasBadge, refresh: refreshProgress } = useStellarProgress();
-  const wallet = useStellarWallet();
+  const { connected } = useStellarWallet();
   const stellarProgress = useStellarProgress();
 
   const quiz = module.quiz;
@@ -53,107 +47,42 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
       setCurrentQ((prev) => prev + 1);
       setSelectedOption(null);
       setAnswered(false);
-    } else {
-      const finalAnswers = [...answers, selectedOption!];
-      const finalCorrect = finalAnswers.reduce(
-        (count, answer, index) =>
-          count + Number(quiz[index].options[answer].isCorrect),
-        0
-      );
-      const finalScore = Math.round((finalCorrect / totalQuestions) * 100);
-      progress.completeQuiz(module.id, finalScore, module.rewardXP);
-      
-      // Submit to blockchain if wallet is connected
-      if (connected && address) {
-        await submitToBlockchain(finalAnswers, finalScore);
-      }
-      
-      setFinished(true);
-
-      if (finalScore >= 75) {
-        if (wallet.connected) {
-          stellarProgress
-            .rewardQuiz(module.id)
-            .then((ok) => {
-              if (!ok) return;
-              toast.success("XP registrado en Stellar Testnet");
-            });
-        } else {
-          toast("Conectá tu wallet para registrar XP en Stellar Testnet", {
-            icon: "💡",
-          });
-        }
-      }
+      return;
     }
-  };
 
-  const submitToBlockchain = async (
-    submittedAnswers: number[],
-    score: number
-  ) => {
-    if (!address) return;
+    const finalAnswers = [...answers, selectedOption!];
+    const finalCorrect = finalAnswers.reduce(
+      (count, answer, index) =>
+        count + Number(quiz[index].options[answer].isCorrect),
+      0
+    );
+    const finalScore = Math.round((finalCorrect / totalQuestions) * 100);
 
-    setSubmitting(true);
-    try {
-      // First, check if badge already exists
-      const hasBadgeAlready = await checkHasBadge(module.id);
-      
-      if (hasBadgeAlready) {
-        toast.success("¡Ya tienes este badge registrado on-chain!");
-        setBadgeMinted(true);
-        setSubmitting(false);
-        return;
-      }
+    progress.completeQuiz(module.id, finalScore, module.rewardXP, finalAnswers);
+    setFinished(true);
 
-      // Step 1: Reward XP via reward_quiz
-      const challengeId = `${module.id}-quiz`;
-      const xpResult = await rewardQuiz({
-        userPublicKey: address,
-        challengeId,
-        answers: submittedAnswers,
-      });
+    if (finalScore >= 75) {
+      if (connected) {
+        const challengeId = `${module.id}-quiz`;
+        const result = await stellarProgress.rewardQuiz(
+          challengeId,
+          finalAnswers,
+          finalCorrect,
+          totalQuestions,
+          module.title
+        );
 
-      console.log("XP rewarded:", xpResult);
-
-      // Step 2: Mint badge if quiz passed (score >= 75)
-      if (score >= 75) {
-        const badgeResult = await mintBadge({
-          userPublicKey: address,
-          moduleId: module.id,
-          moduleTitle: module.title,
-          xpEarned: xpResult.xpRewarded,
-          quizScore: score,
+        if (result) {
+          const badgeMsg = result.badgeHash ? " · Badge NFT acuñado" : "";
+          toast.success(
+            `✅ +${result.xpRewarded} XP registrados en Stellar Testnet${badgeMsg}`
+          );
+        }
+      } else {
+        toast("Conectá tu wallet para registrar XP en Stellar Testnet", {
+          icon: "💡",
         });
-
-        console.log("Badge minted:", badgeResult);
-        setBadgeMinted(true);
-        
-        toast.success(
-          `🏆 ¡Badge NFT registrado on-chain! +${xpResult.xpRewarded} XP`
-        );
-      } else {
-        toast.success(`+${xpResult.xpRewarded} XP ganados`);
       }
-
-      // Refresh on-chain progress
-      await refreshProgress();
-    } catch (error) {
-      console.error("Blockchain submission error:", error);
-      
-      const errorMessage = error instanceof Error ? error.message : "Error desconocido";
-      
-      if (errorMessage.includes("already completed")) {
-        toast.error("Ya completaste este quiz on-chain");
-      } else if (errorMessage.includes("already minted")) {
-        toast.error("Ya tienes este badge on-chain");
-        setBadgeMinted(true);
-      } else {
-        toast.error(
-          "No se pudo registrar on-chain. Tu progreso se guardó localmente."
-        );
-      }
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -163,13 +92,13 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
     setAnswered(false);
     setAnswers([]);
     setFinished(false);
-    setBadgeMinted(false);
   };
 
-  // Results screen
+  // ─── Results screen ───────────────────────────────────────────────────────
   if (finished) {
     const modProgress = progress.getModuleProgress(module.id);
     const passed = modProgress.completed;
+    const reward = stellarProgress.lastRewardResult;
 
     return (
       <div className="text-center py-8">
@@ -197,12 +126,15 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
                 </strong>{" "}
                 de aciertos.
               </p>
+
+              {/* On-chain recording status */}
               {stellarProgress.rewarding && (
                 <div className="flex items-center justify-center gap-2 text-sm text-darkGrey mb-4">
                   <span className="inline-block w-4 h-4 border-2 border-darkOrange/30 border-t-darkOrange rounded-full animate-spin" />
-                  Registrando XP en Stellar Testnet...
+                  Registrando en Stellar Testnet…
                 </div>
               )}
+
               <div className="bg-lightYellow rounded-2xl p-6 mb-6">
                 <Image
                   src={module.nftImage}
@@ -211,46 +143,43 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
                   height={120}
                   className="mx-auto mb-4"
                 />
-                {txHash ? (
-                  <>
+                {connected ? (
+                  reward ? (
+                    <>
+                      <p className="text-sm text-darkOrange font-semibold">
+                        +{reward.xpRewarded} XP
+                        {reward.badgeHash ? " · Badge NFT acuñado" : ""}
+                      </p>
+                      <p className="text-xs text-active mt-2 flex items-center justify-center gap-1">
+                        <BsCheckCircleFill size={12} />
+                        Registrado on-chain en Stellar Testnet
+                      </p>
+                      <p className="text-[10px] text-grey mt-2 break-all">
+                        Tx: {reward.hash}
+                      </p>
+                    </>
+                  ) : stellarProgress.rewarding ? (
                     <p className="text-sm text-darkOrange font-semibold">
-                      Ganaste un NFT + {module.rewardXP} XP
+                      Registrando on-chain…
                     </p>
-                    <p className="text-xs text-darkGrey mt-1">
-                      Este NFT ha sido registrado en Stellar Testnet
-                    </p>
-                    <p className="text-[10px] text-grey mt-2 break-all">
-                      Tx: {txHash}
-                    </p>
-                  </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-darkOrange font-semibold">
+                        Ganaste un NFT + {module.rewardXP} XP
+                      </p>
+                      <p className="text-xs text-darkGrey mt-2">
+                        Progreso guardado localmente
+                      </p>
+                    </>
+                  )
                 ) : (
                   <>
                     <p className="text-sm text-darkOrange font-semibold">
                       Ganaste {module.rewardXP} XP
                     </p>
-                    <p className="text-xs text-grey mt-1">
-                      El minado de NFT y el registro en la blockchain estarán disponibles próximamente.
+                    <p className="text-xs text-grey mt-2">
+                      Conectá tu wallet para registrarlo on-chain
                     </p>
-                    {connected ? (
-                      badgeMinted ? (
-                        <p className="text-xs text-active mt-2 flex items-center justify-center gap-1">
-                          <BsCheckCircleFill size={12} />
-                          Badge registrado on-chain en Stellar Testnet
-                        </p>
-                      ) : submitting ? (
-                        <p className="text-xs text-darkGrey mt-2">
-                          Registrando on-chain...
-                        </p>
-                      ) : (
-                        <p className="text-xs text-darkGrey mt-2">
-                          Badge guardado localmente (requiere reconexión on-chain)
-                        </p>
-                      )
-                    ) : (
-                      <p className="text-xs text-darkGrey mt-2">
-                        Conectá tu wallet para registrarlo on-chain
-                      </p>
-                    )}
                   </>
                 )}
               </div>
@@ -277,7 +206,7 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
             <button
               onClick={onBack}
               className="px-6 py-3 rounded-xl border border-borderGrey text-darkGrey hover:border-darkOrange hover:text-darkOrange transition-colors"
-              disabled={submitting}
+              disabled={stellarProgress.rewarding}
             >
               Volver
             </button>
@@ -285,7 +214,7 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
               <button
                 onClick={handleRetry}
                 className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-darkOrange to-lightOrange text-white font-medium"
-                disabled={submitting}
+                disabled={stellarProgress.rewarding}
               >
                 <BsArrowRepeat size={16} />
                 Reintentar
@@ -297,7 +226,7 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
     );
   }
 
-  // Quiz question screen
+  // ─── Quiz question screen ─────────────────────────────────────────────────
   return (
     <div>
       <button
@@ -310,9 +239,7 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
 
       {/* Header */}
       <div className="mb-6">
-        <p className="text-sm text-darkGrey mb-1">
-          Quiz: {module.title}
-        </p>
+        <p className="text-sm text-darkGrey mb-1">Quiz: {module.title}</p>
         <h1 className="text-xl font-bold text-darkGreen">
           Pregunta {currentQ + 1} de {totalQuestions}
         </h1>
@@ -369,7 +296,11 @@ export default function QuizView({ module, onBack, progress, txHash }: QuizViewP
                       ? "bg-darkOrange text-white"
                       : "bg-progressGrey text-darkGrey"
                   } ${answered && option.isCorrect ? "bg-active text-white" : ""}
-                  ${answered && selectedOption === i && !option.isCorrect ? "bg-pink text-white" : ""}`}
+                  ${
+                    answered && selectedOption === i && !option.isCorrect
+                      ? "bg-pink text-white"
+                      : ""
+                  }`}
                 >
                   {String.fromCharCode(65 + i)}
                 </span>

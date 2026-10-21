@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { courses, Course } from "@/data/courses";
 import { useProgress } from "@/hooks/useProgress";
+import { useStellarProgress } from "@/hooks/useStellarProgress";
 import DashboardLayout from "@/components/DashboardLayout";
 import ModuleCard from "@/app/dashboard/ruta_aprendizaje/components/ModuleCard";
 import LessonView from "@/app/dashboard/ruta_aprendizaje/components/LessonView";
@@ -139,6 +140,7 @@ function CourseCard({
 
 export default function Dashboard() {
   const progressHook = useProgress();
+  const { historicalXP, connected: walletConnected } = useStellarProgress();
   const [view, setView] = useState<View>({ type: "catalog" });
 
   const getCourse = (id: string) => courses.find((c) => c.id === id)!;
@@ -227,8 +229,10 @@ export default function Dashboard() {
                 index={index}
                 unlocked={progressHook.isModuleUnlocked(
                   index,
-                  course.modules
+                  course.modules,
+                  walletConnected ? historicalXP : undefined
                 )}
+                walletConnected={walletConnected}
                 progress={progressHook.getModuleProgress(mod.id)}
                 onStartLesson={(lessonIndex) =>
                   setView({

@@ -9,12 +9,15 @@ import {
   BsPlayCircle,
   BsJournalText,
   BsPatchQuestion,
+  BsShieldLockFill,
 } from "react-icons/bs";
 
 interface ModuleCardProps {
   module: Module;
   index: number;
   unlocked: boolean;
+  /** Whether the user has a wallet connected. Used to show the correct locked message. */
+  walletConnected: boolean;
   progress: ModuleProgress;
   onStartLesson: (lessonIndex: number) => void;
   onStartQuiz: () => void;
@@ -45,6 +48,7 @@ export default function ModuleCard({
   module,
   index,
   unlocked,
+  walletConnected,
   progress,
   onStartLesson,
   onStartQuiz,
@@ -56,6 +60,53 @@ export default function ModuleCard({
   const quizPassed = progress.completed;
 
   if (!unlocked) {
+    const isXPGated = module.minXp !== undefined && module.minXp > 0;
+
+    // XP gate: wallet not connected
+    if (isXPGated && !walletConnected) {
+      return (
+        <div className="rounded-2xl border border-borderGrey/50 p-6 opacity-70">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-progressGrey flex items-center justify-center">
+              <BsShieldLockFill size={20} className="text-darkOrange" />
+            </div>
+            <div>
+              <p className="text-sm text-darkGrey font-medium">
+                Módulo {index + 1}
+              </p>
+              <h3 className="text-lg font-semibold text-grey">{module.title}</h3>
+              <p className="text-sm text-darkOrange mt-1 font-medium">
+                Conectá tu wallet para desbloquear — requiere {module.minXp} XP histórico
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // XP gate: wallet connected but insufficient historical XP
+    if (isXPGated && walletConnected) {
+      return (
+        <div className="rounded-2xl border border-borderGrey/50 p-6 opacity-70">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-progressGrey flex items-center justify-center">
+              <BsShieldLockFill size={20} className="text-darkOrange" />
+            </div>
+            <div>
+              <p className="text-sm text-darkGrey font-medium">
+                Módulo {index + 1}
+              </p>
+              <h3 className="text-lg font-semibold text-grey">{module.title}</h3>
+              <p className="text-sm text-darkOrange mt-1 font-medium">
+                Necesitás {module.minXp} XP histórico on-chain para desbloquear este módulo
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Standard sequential lock
     return (
       <div className="rounded-2xl border border-borderGrey/50 p-6 opacity-60">
         <div className="flex items-center gap-4">
