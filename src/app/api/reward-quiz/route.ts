@@ -7,6 +7,7 @@ import {
   buildRewardQuizArgs,
   isChallengeCompleted,
 } from "@/lib/stellar";
+import { validateQuizReward } from "./validation";
 
 // Rate limiting store (in production, use Redis or a proper rate limiter)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
   try {
     // Parse request body
     const body = await request.json();
-    const { userPublicKey, challengeId, correct, total, maxXp } = body;
+    const { userPublicKey, challengeId, answers } = body;
 
     // Validate required fields
     if (!userPublicKey || typeof userPublicKey !== "string") {
@@ -53,28 +54,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (
-      typeof correct !== "number" ||
-      typeof total !== "number" ||
-      correct < 0 ||
-      total <= 0 ||
-      correct > total
-    ) {
+    const quizResult = validateQuizReward(
+      challengeId,
+      answers,
+      body.correct,
+      body.total
+    );
+    if (!quizResult.valid) {
       return NextResponse.json(
         {
           error:
-            "correct and total must be valid numbers with 0 <= correct <= total",
+            quizResult.reason === "challenge_not_found"
+              ? "Challenge not found"
+              : quizResult.reason === "score_mismatch"
+                ? "Submitted score does not match the canonical quiz"
+                : "answers must contain one valid option index per quiz question",
         },
-        { status: 400 }
+        { status: quizResult.reason === "challenge_not_found" ? 404 : 400 }
       );
     }
-
-    if (typeof maxXp !== "number" || maxXp <= 0) {
-      return NextResponse.json(
-        { error: "maxXp must be a positive number" },
-        { status: 400 }
-      );
-    }
+    const { correct, total, maxXp } = quizResult;
 
     // Validate Stellar public key format
     try {

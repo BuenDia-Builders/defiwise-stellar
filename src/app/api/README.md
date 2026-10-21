@@ -44,12 +44,23 @@ Awards XP tokens to a user for completing a quiz challenge.
 ```typescript
 {
   userPublicKey: string;    // User's Stellar public key
-  challengeId: string;      // Unique challenge identifier
-  correct: number;          // Number of correct answers
-  total: number;            // Total number of questions
-  maxXp: number;            // Maximum XP available for perfect score
+  challengeId: string;      // Canonical module ID plus "-quiz" (e.g. "mod-1-quiz")
+  answers: number[];        // Selected option index for each question, in quiz order
 }
 ```
+
+The server resolves the challenge against `src/data/courses.ts`, validates that
+there is exactly one in-range option index per canonical question, computes the
+correct-answer count itself, and uses that module's `rewardXP`. Client-supplied
+`correct` and `total` values, if included, must match the recomputed values;
+`maxXp` is never used. Unknown challenges return `404`; invalid answer arrays or
+mismatched scores return `400`. The per-user rate limit is applied before any
+admin-signed transaction is built.
+
+Answers still originate from the client; this protects reward calculation and
+XP limits from altered score/total/reward fields, but is not proof that a human
+selected those answers. Stronger anti-cheat guarantees require a server-managed
+quiz session or signed attempt token.
 
 **Response (Success):**
 ```typescript
@@ -73,6 +84,7 @@ Awards XP tokens to a user for completing a quiz challenge.
 **Status Codes:**
 - `200` - Success
 - `400` - Invalid request or transaction failed
+- `404` - Challenge does not exist in the server-side course catalog
 - `409` - Challenge already completed
 - `429` - Rate limit exceeded
 - `500` - Server error
@@ -153,10 +165,8 @@ async function handleQuizComplete() {
   try {
     const result = await rewardQuiz({
       userPublicKey: userWallet.publicKey,
-      challengeId: "defi-basics-01",
-      correct: 8,
-      total: 10,
-      maxXp: 100,
+      challengeId: "mod-1-quiz",
+      answers: [1, 2, 2, 1],
     });
     
     toast.success(`Earned ${result.xpRewarded} XP!`);
@@ -217,10 +227,8 @@ curl -X POST http://localhost:3000/api/reward-quiz \
   -H "Content-Type: application/json" \
   -d '{
     "userPublicKey": "GXXXXXX...",
-    "challengeId": "test-quiz-01",
-    "correct": 8,
-    "total": 10,
-    "maxXp": 100
+    "challengeId": "mod-1-quiz",
+    "answers": [1, 2, 2, 1]
   }'
 
 # Test mint-badge endpoint

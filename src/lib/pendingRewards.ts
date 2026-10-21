@@ -12,12 +12,13 @@
  * on-chain checks and the API calls, which keeps it unit-testable.
  */
 import type { CourseProgress } from "@/hooks/useProgress";
+import type { Question } from "@/data/courses";
 
 export interface ClaimableModule {
   id: string;
   title: string;
   rewardXP: number;
-  quiz: unknown[];
+  quiz: Question[];
 }
 
 export interface PendingReward {
@@ -29,7 +30,8 @@ export interface PendingReward {
   needsXp: boolean;
   /** The module badge has not been minted yet */
   needsBadge: boolean;
-  /** Quiz answers reconstructed from the stored score, for reward_quiz */
+  /** Original answer indices required by server-side score validation */
+  answers: number[];
   correct: number;
   total: number;
   maxXp: number;
@@ -47,17 +49,6 @@ export function challengeIdFor(moduleId: string): string {
 }
 
 /**
- * Number of correct answers implied by a stored percentage score.
- * Scores are stored as Math.round(correct / total * 100), so rounding back
- * recovers the original count for any quiz with up to 100 questions.
- */
-export function correctFromScore(score: number, total: number): number {
-  if (total <= 0) return 0;
-  const c = Math.round((score / 100) * total);
-  return Math.max(0, Math.min(total, c));
-}
-
-/**
  * Modules passed locally whose XP or badge is missing on-chain.
  * A module whose on-chain state cannot be read is skipped (not offered),
  * so a flaky RPC never leads to a claim for something already rewarded.
@@ -70,7 +61,32 @@ export async function findPendingRewards(
   const out: PendingReward[] = [];
   for (const mod of modules) {
     const p = progress[mod.id];
-    if (!p || !p.completed || p.quizScore === null || p.quizScore < PASS_THRESHOLD) continue;
+    const answers = p?.quizAnswers;
+    if (
+      !p ||
+      !p.completed ||
+      mod.quiz.length === 0 ||
+      !Array.isArray(answers) ||
+      answers.length !== mod.quiz.length ||
+      answers.some(
+        (answer, index) =>
+          !Number.isInteger(answer) ||
+          answer < 0 ||
+          answer >= mod.quiz[index].options.length
+      )
+    ) {
+      continue;
+    }
+
+    const correct = answers.reduce(
+      (count, answer, index) =>
+        count + Number(mod.quiz[index].options[answer].isCorrect),
+      0
+    );
+    const total = mod.quiz.length;
+    const quizScore = Math.round((correct / total) * 100);
+    if (quizScore < PASS_THRESHOLD) continue;
+
     const challengeId = challengeIdFor(mod.id);
     let xpDone: boolean;
     let badgeDone: boolean;
@@ -83,15 +99,15 @@ export async function findPendingRewards(
       continue;
     }
     if (xpDone && badgeDone) continue;
-    const total = mod.quiz.length;
     out.push({
       moduleId: mod.id,
       moduleTitle: mod.title,
       challengeId,
-      quizScore: p.quizScore,
+      quizScore,
       needsXp: !xpDone,
       needsBadge: !badgeDone,
-      correct: correctFromScore(p.quizScore, total),
+      answers,
+      correct,
       total,
       maxXp: mod.rewardXP,
     });
@@ -103,9 +119,7 @@ export interface ClaimApi {
   rewardQuiz: (req: {
     userPublicKey: string;
     challengeId: string;
-    correct: number;
-    total: number;
-    maxXp: number;
+    answers: number[];
   }) => Promise<{ xpRewarded: number }>;
   mintBadge: (req: {
     userPublicKey: string;
@@ -156,9 +170,7 @@ export async function claimPendingRewards(
         const x = await api.rewardQuiz({
           userPublicKey: address,
           challengeId: r.challengeId,
-          correct: r.correct,
-          total: r.total,
-          maxXp: r.maxXp,
+          answers: r.answers,
         });
         res.xp = "claimed";
         res.xpRewarded = x.xpRewarded;

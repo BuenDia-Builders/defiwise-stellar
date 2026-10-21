@@ -125,9 +125,9 @@ export function useStellarProgress() {
   const rewardQuiz = useCallback(
     async (
       challengeId: string,
+      answers: number[],
       correct: number,
       total: number,
-      maxXp: number,
       moduleTitle?: string
     ): Promise<RewardResult | null> => {
       if (!connected || !address) return null;
@@ -146,9 +146,7 @@ export function useStellarProgress() {
         const xpResult = await apiRewardQuiz({
           userPublicKey: address,
           challengeId,
-          correct,
-          total,
-          maxXp,
+          answers,
         });
 
         const result: RewardResult = {

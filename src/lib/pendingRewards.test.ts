@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from "vitest";
 import {
   challengeIdFor,
   claimPendingRewards,
-  correctFromScore,
   findPendingRewards,
   isAlreadyClaimed,
   remainingAfterClaim,
@@ -12,16 +11,29 @@ import {
 } from "./pendingRewards";
 import { ApiError } from "./api-client";
 
-const q = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `q${i}` }));
+const q = (n: number) =>
+  Array.from({ length: n }, (_, i) => ({
+    id: `q${i}`,
+    prompt: `Question ${i}`,
+    options: [
+      { text: "Correct", isCorrect: true },
+      { text: "Incorrect", isCorrect: false },
+    ],
+  }));
 const MODULES: ClaimableModule[] = [
   { id: "mod-1", title: "Intro", rewardXP: 50, quiz: q(4) },
   { id: "mod-2", title: "AMMs", rewardXP: 150, quiz: q(5) },
   { id: "mod-3", title: "Lending", rewardXP: 150, quiz: q(4) },
 ];
-const mp = (completed: boolean, quizScore: number | null) => ({
+const mp = (
+  completed: boolean,
+  quizScore: number | null,
+  quizAnswers?: number[]
+) => ({
   completed,
   lessonsCompleted: [],
   quizScore,
+  quizAnswers,
   xpEarned: 0,
 });
 const ADDR = "GASHSELFFKPP5BTMD73FBODXO65MLGP4JCRIXQNEM3RYCWMRKSGOUVHC";
@@ -35,28 +47,48 @@ function chain(xp: string[] = [], badges: string[] = []) {
 
 describe("findPendingRewards", () => {
   it("offers locally completed modules that are missing on-chain", async () => {
-    const progress = { "mod-1": mp(true, 100), "mod-2": mp(true, 80), "mod-3": mp(false, 50) };
+    const progress = {
+      "mod-1": mp(true, 100, [0, 0, 0, 0]),
+      "mod-2": mp(true, 80, [0, 0, 0, 0, 1]),
+      "mod-3": mp(false, 50),
+    };
     const out = await findPendingRewards(progress, MODULES, chain());
     expect(out.map((p) => p.moduleId)).toEqual(["mod-1", "mod-2"]);
-    expect(out[0]).toMatchObject({ challengeId: "mod-1-quiz", needsXp: true, needsBadge: true, correct: 4, total: 4, maxXp: 50 });
-    expect(out[1]).toMatchObject({ correct: 4, total: 5, quizScore: 80 });
+    expect(out[0]).toMatchObject({
+      challengeId: "mod-1-quiz",
+      needsXp: true,
+      needsBadge: true,
+      answers: [0, 0, 0, 0],
+      correct: 4,
+      total: 4,
+      maxXp: 50,
+    });
+    expect(out[1]).toMatchObject({
+      answers: [0, 0, 0, 0, 1],
+      correct: 4,
+      total: 5,
+      quizScore: 80,
+    });
   });
 
   it("does not offer anything already fully on-chain (no re-reward)", async () => {
-    const progress = { "mod-1": mp(true, 100) };
+    const progress = { "mod-1": mp(true, 100, [0, 0, 0, 0]) };
     const out = await findPendingRewards(progress, MODULES, chain(["mod-1-quiz"], ["mod-1"]));
     expect(out).toEqual([]);
   });
 
   it("offers only the missing part when XP is on-chain but the badge is not", async () => {
-    const progress = { "mod-1": mp(true, 100) };
+    const progress = { "mod-1": mp(true, 100, [0, 0, 0, 0]) };
     const out = await findPendingRewards(progress, MODULES, chain(["mod-1-quiz"], []));
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ needsXp: false, needsBadge: true });
   });
 
   it("skips modules whose on-chain state cannot be read", async () => {
-    const progress = { "mod-1": mp(true, 100), "mod-2": mp(true, 100) };
+    const progress = {
+      "mod-1": mp(true, 100, [0, 0, 0, 0]),
+      "mod-2": mp(true, 100, [0, 0, 0, 0, 0]),
+    };
     const checks = {
       isChallengeCompleted: vi.fn(async (c: string) => {
         if (c === "mod-1-quiz") throw new Error("rpc down");
@@ -72,6 +104,11 @@ describe("findPendingRewards", () => {
     const progress = { "mod-1": mp(true, 60), "mod-2": mp(true, null) };
     expect(await findPendingRewards(progress, MODULES, chain())).toEqual([]);
   });
+
+  it("does not reconstruct answers from a stored score", async () => {
+    const progress = { "mod-1": mp(true, 100) };
+    expect(await findPendingRewards(progress, MODULES, chain())).toEqual([]);
+  });
 });
 
 describe("claimPendingRewards", () => {
@@ -82,6 +119,7 @@ describe("claimPendingRewards", () => {
     quizScore: 100,
     needsXp: true,
     needsBadge: true,
+    answers: [0, 0, 0, 0],
     correct: 4,
     total: 4,
     maxXp: 50,
@@ -95,7 +133,11 @@ describe("claimPendingRewards", () => {
   it("claims XP then badge with the deterministic challenge id", async () => {
     const a = api();
     const res = await claimPendingRewards(ADDR, [pending()], a);
-    expect(a.rewardQuiz).toHaveBeenCalledWith({ userPublicKey: ADDR, challengeId: "mod-1-quiz", correct: 4, total: 4, maxXp: 50 });
+    expect(a.rewardQuiz).toHaveBeenCalledWith({
+      userPublicKey: ADDR,
+      challengeId: "mod-1-quiz",
+      answers: [0, 0, 0, 0],
+    });
     expect(a.mintBadge).toHaveBeenCalledWith({ userPublicKey: ADDR, moduleId: "mod-1", moduleTitle: "Intro", xpEarned: 50, quizScore: 100 });
     expect(res).toEqual([{ moduleId: "mod-1", xp: "claimed", badge: "claimed", xpRewarded: 50 }]);
   });
@@ -131,14 +173,6 @@ describe("claimPendingRewards", () => {
 describe("helpers", () => {
   it("challengeIdFor matches the id QuizView sends to /api/reward-quiz", () => {
     expect(challengeIdFor("mod-3")).toBe("mod-3-quiz");
-  });
-  it("correctFromScore inverts the stored rounded percentage", () => {
-    for (const total of [1, 3, 4, 5, 7, 10]) {
-      for (let c = 0; c <= total; c++) {
-        expect(correctFromScore(Math.round((c / total) * 100), total)).toBe(c);
-      }
-    }
-    expect(correctFromScore(100, 0)).toBe(0);
   });
   it("isAlreadyClaimed recognises 409s and the contract panic messages", () => {
     expect(isAlreadyClaimed(new ApiError("x", 409))).toBe(true);

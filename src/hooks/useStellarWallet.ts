@@ -1,13 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  connect as kitConnect,
-  disconnect as kitDisconnect,
-  getPublicKey,
-  isConnected,
-  signTransaction,
-} from "@stellar/wallets-kit";
+import { Networks } from "@stellar/stellar-sdk";
+import { StellarWalletsKit } from "@creit.tech/stellar-wallets-kit/sdk";
+import { defaultModules } from "@creit.tech/stellar-wallets-kit/modules/utils";
 import { useHydrated } from "@/lib/hydration";
 
 export interface WalletOption {
@@ -20,6 +16,22 @@ export const SUPPORTED_WALLETS: WalletOption[] = [
   { id: "xbull", name: "xBull" },
 ];
 
+const SELECTED_WALLET_KEY = "defiwise-selected-wallet";
+let walletKitInitialized = false;
+
+function initializeWalletKit() {
+  if (walletKitInitialized) return;
+
+  const supportedIds = new Set(SUPPORTED_WALLETS.map((wallet) => wallet.id));
+  StellarWalletsKit.init({
+    modules: defaultModules({
+      filterBy: (module) => supportedIds.has(module.productId),
+    }),
+    network: Networks.TESTNET,
+  });
+  walletKitInitialized = true;
+}
+
 export function useStellarWallet() {
   const [address, setAddress] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
@@ -28,17 +40,24 @@ export function useStellarWallet() {
   const isHydrated = useHydrated();
 
   const checkConnection = useCallback(async () => {
+    const walletId = localStorage.getItem(SELECTED_WALLET_KEY);
+    if (!walletId) return;
+
     try {
-      const result = await isConnected();
-      if (result.isConnected) {
-        const addr = await getPublicKey();
-        if (addr) {
-          setAddress(addr);
-          setConnected(true);
-        }
+      initializeWalletKit();
+      StellarWalletsKit.setWallet(walletId);
+      const available = await StellarWalletsKit.selectedModule.isAvailable();
+      if (!available) return;
+
+      const { address: walletAddress } =
+        await StellarWalletsKit.fetchAddress();
+      if (walletAddress) {
+        setAddress(walletAddress);
+        setSelectedWallet(walletId);
+        setConnected(true);
       }
-    } catch {
-      // wallet not installed / not connected
+    } catch (err) {
+      console.error("Error checking wallet connection:", err);
     }
   }, []);
 
@@ -52,30 +71,46 @@ export function useStellarWallet() {
     async (walletId?: string) => {
       setLoading(true);
       try {
-        if (walletId) {
-          setSelectedWallet(walletId);
-        }
-        const wallet = selectedWallet || walletId || "freighter";
-        await kitConnect({ wallet });
-        const addr = await getPublicKey();
-        if (addr) {
-          setAddress(addr);
+        const wallet = walletId || selectedWallet || "freighter";
+        initializeWalletKit();
+        StellarWalletsKit.setWallet(wallet);
+        const { address: walletAddress } =
+          await StellarWalletsKit.fetchAddress();
+        if (walletAddress) {
+          localStorage.setItem(SELECTED_WALLET_KEY, wallet);
+          setAddress(walletAddress);
           setConnected(true);
+          setSelectedWallet(wallet);
         }
       } catch (err) {
         console.error("Error connecting to wallet:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     },
     [selectedWallet]
   );
 
-  const disconnect = useCallback(() => {
-    kitDisconnect();
-    setAddress(null);
-    setConnected(false);
-    setSelectedWallet(null);
+  const disconnect = useCallback(async () => {
+    try {
+      initializeWalletKit();
+      await StellarWalletsKit.disconnect();
+      localStorage.removeItem(SELECTED_WALLET_KEY);
+      setAddress(null);
+      setConnected(false);
+      setSelectedWallet(null);
+    } catch (err) {
+      console.error("Error disconnecting wallet:", err);
+    }
   }, []);
+
+  const signTransaction = useCallback(
+    (
+      xdr: string,
+      options?: Parameters<typeof StellarWalletsKit.signTransaction>[1]
+    ) => StellarWalletsKit.signTransaction(xdr, options),
+    []
+  );
 
   const truncatedAddress = address
     ? `${address.slice(0, 4)}...${address.slice(-4)}`

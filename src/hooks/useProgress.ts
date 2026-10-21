@@ -7,6 +7,7 @@ export interface ModuleProgress {
   completed: boolean;
   lessonsCompleted: string[];
   quizScore: number | null; // null = not attempted, 0-100 = score
+  quizAnswers?: number[];
   xpEarned: number;
 }
 
@@ -81,7 +82,7 @@ export function useProgress() {
   );
 
   const completeQuiz = useCallback(
-    (moduleId: string, score: number, xp: number) => {
+    (moduleId: string, score: number, xp: number, answers: number[]) => {
       setProgress((prev) => {
         const mod = prev[moduleId] ?? {
           completed: false,
@@ -95,6 +96,7 @@ export function useProgress() {
           [moduleId]: {
             ...mod,
             quizScore: score,
+            quizAnswers: answers,
             completed: passed,
             xpEarned: passed ? xp : 0,
           },

@@ -26,7 +26,7 @@ export default function QuizView({ module, onBack, progress }: QuizViewProps) {
   const [currentQ, setCurrentQ] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
-  const [correctCount, setCorrectCount] = useState(0);
+  const [answers, setAnswers] = useState<number[]>([]);
   const [finished, setFinished] = useState(false);
 
   const { connected } = useStellarWallet();
@@ -39,38 +39,36 @@ export default function QuizView({ module, onBack, progress }: QuizViewProps) {
   const handleAnswer = () => {
     if (selectedOption === null) return;
     setAnswered(true);
-    if (question.options[selectedOption].isCorrect) {
-      setCorrectCount((prev) => prev + 1);
-    }
   };
 
   const handleNext = async () => {
     if (currentQ + 1 < totalQuestions) {
+      setAnswers((previous) => [...previous, selectedOption!]);
       setCurrentQ((prev) => prev + 1);
       setSelectedOption(null);
       setAnswered(false);
       return;
     }
 
-    // Last question — tally up
-    const lastCorrect =
-      correctCount + (question.options[selectedOption!]?.isCorrect ? 1 : 0);
-    const finalScore = Math.round((lastCorrect / totalQuestions) * 100);
+    const finalAnswers = [...answers, selectedOption!];
+    const finalCorrect = finalAnswers.reduce(
+      (count, answer, index) =>
+        count + Number(quiz[index].options[answer].isCorrect),
+      0
+    );
+    const finalScore = Math.round((finalCorrect / totalQuestions) * 100);
 
-    // 1. Persist locally first so progress is never lost regardless of
-    //    on-chain outcome.
-    progress.completeQuiz(module.id, finalScore, module.rewardXP);
+    progress.completeQuiz(module.id, finalScore, module.rewardXP, finalAnswers);
     setFinished(true);
 
-    // 2. Attempt on-chain recording when wallet is connected and score passes.
     if (finalScore >= 75) {
       if (connected) {
         const challengeId = `${module.id}-quiz`;
         const result = await stellarProgress.rewardQuiz(
           challengeId,
-          lastCorrect,
+          finalAnswers,
+          finalCorrect,
           totalQuestions,
-          module.rewardXP,
           module.title
         );
 
@@ -92,7 +90,7 @@ export default function QuizView({ module, onBack, progress }: QuizViewProps) {
     setCurrentQ(0);
     setSelectedOption(null);
     setAnswered(false);
-    setCorrectCount(0);
+    setAnswers([]);
     setFinished(false);
   };
 
@@ -145,7 +143,6 @@ export default function QuizView({ module, onBack, progress }: QuizViewProps) {
                   height={120}
                   className="mx-auto mb-4"
                 />
-
                 {connected ? (
                   reward ? (
                     <>

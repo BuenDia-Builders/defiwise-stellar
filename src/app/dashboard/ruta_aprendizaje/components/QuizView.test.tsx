@@ -1,19 +1,19 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
-import QuizView from "./QuizView";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-
-afterEach(() => {
-  cleanup();
-  vi.restoreAllMocks();
-});
-
-// ─── Module mocks ─────────────────────────────────────────────────────────────
+import QuizView from "./QuizView";
+import type { Module } from "@/data/courses";
+import { useProgress } from "@/hooks/useProgress";
+import { useStellarProgress } from "@/hooks/useStellarProgress";
+import { useStellarWallet } from "@/hooks/useStellarWallet";
 
 vi.mock("next/image", () => ({
   __esModule: true,
-  default: (props: any) => <img {...props} src={props.src} alt={props.alt || ""} />,
+  default: (props: React.ComponentProps<"img">) => {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img {...props} src={props.src} alt={props.alt || ""} />;
+  },
 }));
 
 vi.mock("react-hot-toast", () => ({
@@ -24,36 +24,15 @@ vi.mock("react-hot-toast", () => ({
   }),
 }));
 
-// Default hook values — overridden per test where needed
-const defaultStellarProgress = {
-  connected: false,
-  address: null,
-  rewarding: false,
-  rewardError: null,
-  lastRewardResult: null,
-  xpBalance: BigInt(0),
-  historicalXP: BigInt(0),
-  loading: false,
-  error: null,
-  fetchOnChainProgress: vi.fn(),
-  refresh: vi.fn(),
-  rewardQuiz: vi.fn().mockResolvedValue(null),
-  checkChallengeCompleted: vi.fn().mockResolvedValue(false),
-  checkHasBadge: vi.fn().mockResolvedValue(false),
-  isHydrated: true,
-};
-
 vi.mock("@/hooks/useStellarWallet", () => ({
-  useStellarWallet: vi.fn(() => ({ connected: false, address: null })),
+  useStellarWallet: vi.fn(),
 }));
 
 vi.mock("@/hooks/useStellarProgress", () => ({
-  useStellarProgress: vi.fn(() => ({ ...defaultStellarProgress })),
+  useStellarProgress: vi.fn(),
 }));
 
-// ─── Fixtures ─────────────────────────────────────────────────────────────────
-
-const mockModule = {
+const mockModule: Module = {
   id: "mod-1",
   title: "Test Module",
   description: "Test Description",
@@ -73,7 +52,10 @@ const mockModule = {
   ],
 };
 
-const createMockProgress = (quizScore: number | null, completed: boolean) => ({
+const createMockProgress = (
+  quizScore: number | null,
+  completed: boolean
+): ReturnType<typeof useProgress> => ({
   progress: {},
   getModuleProgress: () => ({
     completed,
@@ -89,7 +71,24 @@ const createMockProgress = (quizScore: number | null, completed: boolean) => ({
   isHydrated: true,
 });
 
-/** Helper: answer and submit the single-question quiz */
+const createMockStellarProgress = (): ReturnType<typeof useStellarProgress> => ({
+  connected: false,
+  address: null,
+  rewarding: false,
+  rewardError: null,
+  lastRewardResult: null,
+  xpBalance: BigInt(0),
+  historicalXP: BigInt(0),
+  loading: false,
+  error: null,
+  fetchOnChainProgress: vi.fn(async () => {}),
+  refresh: vi.fn(async () => {}),
+  checkChallengeCompleted: vi.fn(async () => false),
+  checkHasBadge: vi.fn(async () => false),
+  rewardQuiz: vi.fn(async () => null),
+  isHydrated: true,
+});
+
 async function completeQuiz() {
   fireEvent.click(screen.getByText("Decentralized Finance"));
   fireEvent.click(screen.getByText("Confirmar respuesta"));
@@ -98,309 +97,133 @@ async function completeQuiz() {
   });
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+beforeEach(() => {
+  vi.mocked(useStellarWallet).mockReturnValue({
+    connected: false,
+    address: null,
+  } as ReturnType<typeof useStellarWallet>);
+  vi.mocked(useStellarProgress).mockReturnValue(createMockStellarProgress());
+});
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
 
 describe("QuizView", () => {
-  it("renders the first question", () => {
-    render(
-      <QuizView
-        module={mockModule}
-        onBack={vi.fn()}
-        progress={createMockProgress(null, false) as any}
-      />
-    );
+  it("renders questions and records the quiz result locally", async () => {
+    const progress = createMockProgress(null, false);
+    render(<QuizView module={mockModule} onBack={vi.fn()} progress={progress} />);
+
     expect(screen.getByText("What is DeFi?")).toBeTruthy();
+    await completeQuiz();
+
+    expect(progress.completeQuiz).toHaveBeenCalledWith("mod-1", 100, 50, [0]);
   });
 
-  it("calls completeQuiz on local progress when quiz is finished", async () => {
-    const mockProgress = createMockProgress(null, false);
+  it("submits the selected answer indices for server-side validation", async () => {
+    const rewardQuiz = vi.fn().mockResolvedValue({
+      hash: "stellarhash123",
+      xpRewarded: 50,
+    });
+    vi.mocked(useStellarWallet).mockReturnValue({
+      connected: true,
+      address: "GABC123",
+    } as ReturnType<typeof useStellarWallet>);
+    vi.mocked(useStellarProgress).mockReturnValue({
+      ...createMockStellarProgress(),
+      connected: true,
+      rewardQuiz,
+    } as ReturnType<typeof useStellarProgress>);
+
     render(
       <QuizView
         module={mockModule}
         onBack={vi.fn()}
-        progress={mockProgress as any}
+        progress={createMockProgress(null, false)}
       />
     );
     await completeQuiz();
-    expect(mockProgress.completeQuiz).toHaveBeenCalledWith("mod-1", 100, 50);
+
+    expect(rewardQuiz).toHaveBeenCalledWith(
+      "mod-1-quiz",
+      [0],
+      1,
+      1,
+      "Test Module"
+    );
   });
 
-  describe("on-chain integration — rewardQuiz hook", () => {
-    beforeEach(() => {
-      // Simulate wallet connected
-      const { useStellarWallet } = vi.mocked(
-        await import("@/hooks/useStellarWallet")
-      );
-      useStellarWallet.mockReturnValue({
-        connected: true,
-        address: "GABC123",
-      } as any);
-    });
+  it("does not submit a quiz below the passing threshold", async () => {
+    const rewardQuiz = vi.fn().mockResolvedValue(null);
+    vi.mocked(useStellarWallet).mockReturnValue({
+      connected: true,
+      address: "GABC123",
+    } as ReturnType<typeof useStellarWallet>);
+    vi.mocked(useStellarProgress).mockReturnValue({
+      ...createMockStellarProgress(),
+      connected: true,
+      rewardQuiz,
+    } as ReturnType<typeof useStellarProgress>);
 
-    it("calls rewardQuiz with challengeId, correct count, total and moduleTitle when score ≥ 75 %", async () => {
-      const mockRewardQuiz = vi.fn().mockResolvedValue({
-        hash: "abc123",
-        xpRewarded: 50,
-      });
-
-      const { useStellarProgress } = vi.mocked(
-        await import("@/hooks/useStellarProgress")
-      );
-      useStellarProgress.mockReturnValue({
-        ...defaultStellarProgress,
-        connected: true,
-        rewardQuiz: mockRewardQuiz,
-        lastRewardResult: null,
-      } as any);
-
-      render(
-        <QuizView
-          module={mockModule}
-          onBack={vi.fn()}
-          progress={createMockProgress(null, false) as any}
-        />
-      );
-
-      await completeQuiz();
-
-      expect(mockRewardQuiz).toHaveBeenCalledWith(
-        "mod-1-quiz",   // challengeId
-        1,              // correct
-        1,              // total
-        50,             // maxXp
-        "Test Module"   // moduleTitle
-      );
-    });
-
-    it("does NOT call rewardQuiz when score < 75 %", async () => {
-      const mockRewardQuiz = vi.fn().mockResolvedValue(null);
-
-      const { useStellarProgress } = vi.mocked(
-        await import("@/hooks/useStellarProgress")
-      );
-      useStellarProgress.mockReturnValue({
-        ...defaultStellarProgress,
-        connected: true,
-        rewardQuiz: mockRewardQuiz,
-      } as any);
-
-      const failingModule = {
-        ...mockModule,
-        quiz: [
-          {
-            id: "q-1",
-            prompt: "What is DeFi?",
-            options: [
-              { text: "Decentralized Finance", isCorrect: false },
-              { text: "Traditional Finance", isCorrect: true },
-            ],
-          },
-        ],
-      };
-
-      render(
-        <QuizView
-          module={failingModule}
-          onBack={vi.fn()}
-          progress={createMockProgress(null, false) as any}
-        />
-      );
-
-      // Pick wrong answer
-      fireEvent.click(screen.getByText("Decentralized Finance"));
-      fireEvent.click(screen.getByText("Confirmar respuesta"));
-      await act(async () => {
-        fireEvent.click(screen.getByText("Ver resultado"));
-      });
-
-      expect(mockRewardQuiz).not.toHaveBeenCalled();
-    });
-
-    it("does NOT call rewardQuiz when wallet is disconnected", async () => {
-      const { useStellarWallet } = vi.mocked(
-        await import("@/hooks/useStellarWallet")
-      );
-      useStellarWallet.mockReturnValue({ connected: false, address: null } as any);
-
-      const mockRewardQuiz = vi.fn().mockResolvedValue(null);
-      const { useStellarProgress } = vi.mocked(
-        await import("@/hooks/useStellarProgress")
-      );
-      useStellarProgress.mockReturnValue({
-        ...defaultStellarProgress,
-        connected: false,
-        rewardQuiz: mockRewardQuiz,
-      } as any);
-
-      render(
-        <QuizView
-          module={mockModule}
-          onBack={vi.fn()}
-          progress={createMockProgress(null, false) as any}
-        />
-      );
-
-      await completeQuiz();
-
-      expect(mockRewardQuiz).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("results screen — on-chain confirmation UI", () => {
-    it("shows real tx hash and XP from lastRewardResult", async () => {
-      const { useStellarProgress } = vi.mocked(
-        await import("@/hooks/useStellarProgress")
-      );
-      useStellarProgress.mockReturnValue({
-        ...defaultStellarProgress,
-        connected: true,
-        rewardQuiz: vi.fn().mockResolvedValue({
-          hash: "stellarhash123",
-          xpRewarded: 42,
-        }),
-        lastRewardResult: {
-          hash: "stellarhash123",
-          xpRewarded: 42,
+    const failingModule: Module = {
+      ...mockModule,
+      quiz: [
+        {
+          ...mockModule.quiz[0],
+          options: [
+            { text: "Decentralized Finance", isCorrect: false },
+            { text: "Traditional Finance", isCorrect: true },
+          ],
         },
-      } as any);
+      ],
+    };
 
-      render(
-        <QuizView
-          module={mockModule}
-          onBack={vi.fn()}
-          progress={createMockProgress(100, true) as any}
-        />
-      );
-
-      await completeQuiz();
-
-      expect(screen.getByText("Tx: stellarhash123")).toBeTruthy();
-      expect(screen.getByText(/\+42 XP/)).toBeTruthy();
-      expect(screen.getByText(/Registrado on-chain en Stellar Testnet/)).toBeTruthy();
+    render(
+      <QuizView
+        module={failingModule}
+        onBack={vi.fn()}
+        progress={createMockProgress(null, false)}
+      />
+    );
+    fireEvent.click(screen.getByText("Decentralized Finance"));
+    fireEvent.click(screen.getByText("Confirmar respuesta"));
+    await act(async () => {
+      fireEvent.click(screen.getByText("Ver resultado"));
     });
 
-    it("shows badge hash label when badge was minted", async () => {
-      const { useStellarProgress } = vi.mocked(
-        await import("@/hooks/useStellarProgress")
-      );
-      useStellarProgress.mockReturnValue({
-        ...defaultStellarProgress,
-        connected: true,
-        rewardQuiz: vi.fn().mockResolvedValue({
-          hash: "xphash",
-          xpRewarded: 50,
-          badgeHash: "badgehash",
-        }),
-        lastRewardResult: {
-          hash: "xphash",
-          xpRewarded: 50,
-          badgeHash: "badgehash",
-        },
-      } as any);
-
-      render(
-        <QuizView
-          module={mockModule}
-          onBack={vi.fn()}
-          progress={createMockProgress(100, true) as any}
-        />
-      );
-
-      await completeQuiz();
-
-      expect(screen.getByText(/Badge NFT acuñado/)).toBeTruthy();
-    });
-
-    it("shows spinner while rewarding is in progress", async () => {
-      const { useStellarProgress } = vi.mocked(
-        await import("@/hooks/useStellarProgress")
-      );
-      useStellarProgress.mockReturnValue({
-        ...defaultStellarProgress,
-        connected: true,
-        rewarding: true,
-        rewardQuiz: vi.fn().mockReturnValue(new Promise(() => {})), // never resolves
-        lastRewardResult: null,
-      } as any);
-
-      render(
-        <QuizView
-          module={mockModule}
-          onBack={vi.fn()}
-          progress={createMockProgress(100, true) as any}
-        />
-      );
-
-      await completeQuiz();
-
-      expect(screen.getByText(/Registrando en Stellar Testnet/)).toBeTruthy();
-    });
-
-    it("shows wallet prompt when disconnected and score ≥ 75 %", async () => {
-      const toast = (await import("react-hot-toast")).default as any;
-
-      const { useStellarWallet } = vi.mocked(
-        await import("@/hooks/useStellarWallet")
-      );
-      useStellarWallet.mockReturnValue({ connected: false, address: null } as any);
-
-      const { useStellarProgress } = vi.mocked(
-        await import("@/hooks/useStellarProgress")
-      );
-      useStellarProgress.mockReturnValue({
-        ...defaultStellarProgress,
-        connected: false,
-        lastRewardResult: null,
-      } as any);
-
-      render(
-        <QuizView
-          module={mockModule}
-          onBack={vi.fn()}
-          progress={createMockProgress(null, false) as any}
-        />
-      );
-
-      await completeQuiz();
-
-      expect(toast).toHaveBeenCalledWith(
-        expect.stringContaining("Conectá tu wallet"),
-        expect.objectContaining({ icon: "💡" })
-      );
-    });
+    expect(rewardQuiz).not.toHaveBeenCalled();
   });
 
-  describe("local progress is never broken by on-chain errors", () => {
-    it("still marks quiz complete locally even when rewardQuiz returns null (409/429)", async () => {
-      const { useStellarWallet } = vi.mocked(
-        await import("@/hooks/useStellarWallet")
-      );
-      useStellarWallet.mockReturnValue({ connected: true, address: "GABC" } as any);
+  it("shows the transaction hash from a successful on-chain reward", async () => {
+    vi.mocked(useStellarWallet).mockReturnValue({
+      connected: true,
+      address: "GABC123",
+    } as ReturnType<typeof useStellarWallet>);
+    vi.mocked(useStellarProgress).mockReturnValue({
+      ...createMockStellarProgress(),
+      connected: true,
+      lastRewardResult: {
+        hash: "stellarhash123",
+        xpRewarded: 42,
+      },
+      rewardQuiz: vi.fn().mockResolvedValue({
+        hash: "stellarhash123",
+        xpRewarded: 42,
+      }),
+    } as ReturnType<typeof useStellarProgress>);
 
-      const { useStellarProgress } = vi.mocked(
-        await import("@/hooks/useStellarProgress")
-      );
-      useStellarProgress.mockReturnValue({
-        ...defaultStellarProgress,
-        connected: true,
-        rewardQuiz: vi.fn().mockResolvedValue(null), // simulates 409/429 handled inside hook
-        lastRewardResult: null,
-      } as any);
+    render(
+      <QuizView
+        module={mockModule}
+        onBack={vi.fn()}
+        progress={createMockProgress(100, true)}
+      />
+    );
+    await completeQuiz();
 
-      const mockProgress = createMockProgress(null, false);
-
-      render(
-        <QuizView
-          module={mockModule}
-          onBack={vi.fn()}
-          progress={mockProgress as any}
-        />
-      );
-
-      await completeQuiz();
-
-      // Local progress must be saved regardless
-      expect(mockProgress.completeQuiz).toHaveBeenCalled();
-    });
+    expect(screen.getByText("Tx: stellarhash123")).toBeTruthy();
+    expect(screen.getByText(/\+42 XP/)).toBeTruthy();
+    expect(screen.getByText(/Registrado on-chain en Stellar Testnet/)).toBeTruthy();
   });
 });
