@@ -1,6 +1,17 @@
-import { describe, it, expect } from 'vitest';
-import { buildRewardQuizArgs, buildMintBadgeArgs, computeXPPercent } from './stellar';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { buildRewardQuizArgs, buildMintBadgeArgs, computeXPPercent, checkXPRequirement } from './stellar';
 import * as StellarSdk from '@stellar/stellar-sdk';
+
+// ─── mock queryContract so checkXPRequirement never hits the network ───
+vi.mock('./stellar', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./stellar')>();
+  return {
+    ...actual,
+    queryContract: vi.fn(),
+  };
+});
+
+import { queryContract } from './stellar';
 
 describe('stellar validations', () => {
   describe('buildRewardQuizArgs', () => {
@@ -80,5 +91,62 @@ describe('stellar validations', () => {
     it('clamps to 100 when xp exceeds maxXP', () => {
       expect(computeXPPercent(BigInt(500), 200)).toBe(100);
     });
+  });
+});
+
+describe('checkXPRequirement', () => {
+  const VALID_KEY = 'GASHSELFFKPP5BTMD73FBODXO65MLGP4JCRIXQNEM3RYCWMRKSGOUVHC';
+
+  beforeEach(() => {
+    vi.mocked(queryContract).mockReset();
+  });
+
+  it('returns false for empty public key without calling the contract', async () => {
+    const result = await checkXPRequirement('', 100);
+    expect(result).toBe(false);
+    expect(queryContract).not.toHaveBeenCalled();
+  });
+
+  it('returns true immediately when minXp <= 0 (no threshold)', async () => {
+    const result = await checkXPRequirement(VALID_KEY, 0);
+    expect(result).toBe(true);
+    expect(queryContract).not.toHaveBeenCalled();
+  });
+
+  it('returns true when contract returns true (historical balance meets threshold)', async () => {
+    // Simulate the contract returning ScBool true
+    vi.mocked(queryContract).mockResolvedValueOnce(
+      StellarSdk.nativeToScVal(true, { type: 'bool' })
+    );
+    const result = await checkXPRequirement(VALID_KEY, 50);
+    expect(result).toBe(true);
+    expect(queryContract).toHaveBeenCalledWith(
+      expect.any(String),   // contract address
+      'meets_requirement',
+      expect.any(Array)
+    );
+  });
+
+  it('returns false when contract returns false (insufficient historical XP)', async () => {
+    vi.mocked(queryContract).mockResolvedValueOnce(
+      StellarSdk.nativeToScVal(false, { type: 'bool' })
+    );
+    const result = await checkXPRequirement(VALID_KEY, 200);
+    expect(result).toBe(false);
+  });
+
+  it('returns false when contract returns undefined (account not found)', async () => {
+    vi.mocked(queryContract).mockResolvedValueOnce(undefined);
+    const result = await checkXPRequirement(VALID_KEY, 100);
+    expect(result).toBe(false);
+  });
+
+  it('uses meets_requirement (historical balance), not balance — gating invariant', async () => {
+    vi.mocked(queryContract).mockResolvedValueOnce(
+      StellarSdk.nativeToScVal(true, { type: 'bool' })
+    );
+    await checkXPRequirement(VALID_KEY, 100);
+    // Verify we called meets_requirement, not balance or historical_balance directly
+    expect(vi.mocked(queryContract).mock.calls[0][1]).toBe('meets_requirement');
   });
 });
